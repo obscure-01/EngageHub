@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html class="h-full bg-surface" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>EngageHub - Student Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#d0e2ff",
+                        "error": "#da1e28",
+                        "inverse-surface": "#393939",
+                        "on-secondary-container": "#525252",
+                        "error-container": "#fff1f1",
+                        "on-surface": "#161616",
+                        "inverse-on-surface": "#f4f4f4",
+                        "secondary-container": "#e0e0e0",
+                        "on-primary-fixed": "#001d6c",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#f4f4f4",
+                        "surface-container-highest": "#c6c6c6",
+                        "primary-container": "#d0e2ff",
+                        "surface-container-low": "#f4f4f4",
+                        "surface-bright": "#ffffff",
+                        "surface-container": "#f4f4f4",
+                        "on-primary-fixed-variant": "#0043ce",
+                        "inverse-primary": "#78a9ff",
+                        "surface-dim": "#e0e0e0",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#198038",
+                        "surface-tint": "#0f62fe",
+                        "primary": "#0f62fe",
+                        "on-tertiary-fixed-variant": "#044317",
+                        "on-tertiary-container": "#044317",
+                        "surface": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#c6c6c6",
+                        "background": "#ffffff",
+                        "surface-container-high": "#e0e0e0",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#525252",
+                        "on-primary": "#ffffff",
+                        "outline": "#8d8d8d",
+                        "on-error-container": "#750e13",
+                        "on-tertiary-fixed": "#022d0d",
+                        "secondary-fixed": "#e0e0e0",
+                        "on-secondary-fixed": "#161616",
+                        "secondary": "#6f6f6f",
+                        "on-primary-container": "#161616",
+                        "primary-fixed-dim": "#78a9ff",
+                        "tertiary-fixed": "#a7f0ba",
+                        "outline-variant": "#e0e0e0",
+                        "on-background": "#161616",
+                        "tertiary-container": "#a7f0ba",
+                        "tertiary-fixed-dim": "#42be65",
+                        "on-secondary-fixed-variant": "#525252"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["IBM Plex Sans", "sans-serif"],
+                        "display": ["IBM Plex Sans", "sans-serif"],
+                        "body": ["IBM Plex Sans", "sans-serif"],
+                        "label": ["IBM Plex Sans", "sans-serif"]
+                    },
+                    "fontSize": {}
+                },
+            },
+        }
+    </script>
+    <style>
+        body { font-family: 'IBM Plex Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-full flex overflow-hidden">
+    
+    <!-- SideNavBar (Desktop) -->
+    <nav class="bg-inverse-surface h-screen w-64 flex flex-col border-r border-outline-variant fixed inset-y-0 left-0 z-50 overflow-y-auto hidden md:flex">
+        <div class="p-6 border-b border-outline-variant">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-on-primary text-2xl" style="font-variation-settings: 'FILL' 1;">hub</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-inverse-on-surface font-headline">EngageHub</h1>
+                    <p class="text-secondary-fixed-dim text-sm">Student Portal</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex flex-col mt-4 flex-1">
+            <button id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-6 py-4 text-primary-fixed-dim font-bold bg-on-secondary-container font-headline text-body-sm transition-all duration-150 text-left">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                Dashboard
+            </button>
+            <button id="nav-tasks" class="nav-item w-full flex items-center gap-3 px-6 py-4 text-secondary-fixed-dim font-normal font-headline text-body-sm hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                <span class="material-symbols-outlined">task</span>
+                Pending Tasks
+            </button>
+            <button id="nav-completed" class="nav-item w-full flex items-center gap-3 px-6 py-4 text-secondary-fixed-dim font-normal font-headline text-body-sm hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                <span class="material-symbols-outlined">check_circle</span>
+                Completed Tasks
+            </button>
+            <button id="nav-leaderboard" class="nav-item w-full flex items-center gap-3 px-6 py-4 text-secondary-fixed-dim font-normal font-headline text-body-sm hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                <span class="material-symbols-outlined">leaderboard</span>
+                Leaderboard
+            </button>
+            <button id="nav-profile" class="nav-item w-full flex items-center gap-3 px-6 py-4 text-secondary-fixed-dim font-normal font-headline text-body-sm hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                <span class="material-symbols-outlined">person</span>
+                Profile
+            </button>
+        </div>
+        <div class="mt-auto mb-6">
+            <button id="btn-logout" class="w-full flex items-center gap-3 px-6 py-4 text-secondary-fixed-dim font-normal font-headline text-body-sm hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                <span class="material-symbols-outlined">logout</span>
+                Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden md:ml-64">
+        
+        <!-- TopAppBar -->
+        <header class="bg-surface flex justify-between items-center h-16 px-6 sticky top-0 z-40 border-b border-outline-variant">
+            <div class="flex items-center gap-2">
+                <button id="mobile-menu-toggle" class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-70 p-1 md:hidden">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <h2 class="text-lg font-black text-on-surface font-headline tracking-tight">EngageHub</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="student-name-header" class="text-sm font-semibold text-on-surface-variant hidden sm:inline">-</span>
+                <div class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant bg-surface-container-high font-bold" id="avatar-container">
+                    <!-- Letter -->
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile SideNavBar Panel -->
+        <div id="mobile-sidebar" class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden md:hidden">
+            <div class="bg-inverse-surface w-64 h-full flex flex-col border-r border-outline-variant p-4">
+                <div class="flex justify-between items-center pb-6 border-b border-on-secondary-container/20 mb-4">
+                    <span class="text-xl font-bold text-inverse-on-surface">EngageHub</span>
+                    <button id="mobile-menu-close" class="text-secondary-fixed-dim hover:text-inverse-on-surface">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <ul class="flex flex-col gap-2 flex-1">
+                    <li>
+                        <button id="mobile-nav-dashboard" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-primary-fixed-dim font-bold bg-on-secondary-container transition-all duration-150 text-left">
+                            <span class="material-symbols-outlined">dashboard</span>
+                            Dashboard
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-tasks" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">task</span>
+                            Pending Tasks
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-completed" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            Completed Tasks
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-leaderboard" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">leaderboard</span>
+                            Leaderboard
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-profile" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">person</span>
+                            Profile
+                        </button>
+                    </li>
+                </ul>
+                <div class="border-t border-on-secondary-container/20 pt-4">
+                    <button id="btn-mobile-logout" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim hover:text-inverse-on-surface text-left">
+                        <span class="material-symbols-outlined">logout</span>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Canvas -->
+        <main class="flex-1 overflow-y-auto bg-surface-container-low p-4 md:p-8">
+            <div class="max-w-7xl mx-auto">
+                
+                <!-- Notification Banner (Dynamic Alert) -->
+                <div id="student-alert" class="mb-6 border-l-4 p-4 hidden flex items-start justify-between shadow-[0_2px_6px_rgba(0,0,0,0.05)] transition-all duration-200">
+                    <div class="flex gap-3">
+                        <span id="alert-icon" class="material-symbols-outlined">info</span>
+                        <div>
+                            <p id="alert-text" class="text-sm font-semibold"></p>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('student-alert').classList.add('hidden')" class="text-on-surface-variant hover:text-on-surface">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+
+                <!-- VIEW 1: DASHBOARD -->
+                <div id="view-dashboard-section" class="space-y-8">
+                    <!-- Welcome Card -->
+                    <section class="bg-surface-container rounded-DEFAULT p-8 border border-outline-variant flex justify-between items-center relative overflow-hidden">
+                        <div class="z-10">
+                            <h2 class="text-3xl font-semibold text-on-surface mb-2 font-headline" id="welcome-name-card">Welcome back!</h2>
+                            <p class="text-on-surface-variant mb-6 text-base">Stay active and engage with college social media content to climb the leaderboard.</p>
+                            <div class="flex gap-8">
+                                <div>
+                                    <p class="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Current Points</p>
+                                    <p class="text-4xl font-bold text-primary" id="welcome-points-card">-</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Current Rank</p>
+                                    <p class="text-4xl font-bold text-on-surface" id="welcome-rank-card">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-primary-fixed to-transparent opacity-30 z-0 pointer-events-none"></div>
+                    </section>
+
+                    <!-- Two columns: Tasks and Leaderboard snippet -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Pending Tasks Snippet -->
+                        <section class="lg:col-span-2 space-y-4">
+                            <div class="flex justify-between items-center border-b border-outline-variant pb-2">
+                                <h3 class="text-xl font-semibold text-on-surface font-headline">Pending Tasks</h3>
+                                <button id="btn-view-all-pending" class="text-primary text-sm font-semibold hover:underline">View All</button>
+                            </div>
+                            <div id="dashboard-tasks-grid" class="grid gap-4">
+                                <!-- Dynamically loaded task cards -->
+                                <p class="text-sm text-on-surface-variant py-4">Checking for assigned tasks...</p>
+                            </div>
+                        </section>
+
+                        <!-- Leaderboard snippet & Profile snippet -->
+                        <section class="flex flex-col gap-8">
+                            <!-- Leaderboard top 3 -->
+                            <div class="bg-surface border border-outline-variant rounded-DEFAULT">
+                                <div class="p-4 border-b border-outline-variant bg-surface-container-low">
+                                    <h3 class="font-semibold text-on-surface font-headline">Top Performers</h3>
+                                </div>
+                                <ul class="divide-y divide-outline-variant" id="dashboard-leaderboard-list">
+                                    <!-- Dynamic rows -->
+                                </ul>
+                                <button id="btn-view-full-leaderboard" class="w-full p-3 border-t border-outline-variant text-center bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors block text-primary text-sm font-semibold">
+                                    View Full Leaderboard
+                                </button>
+                            </div>
+
+                            <!-- Profile Snippet -->
+                            <div class="bg-surface border border-outline-variant p-6 rounded-DEFAULT text-center" id="dashboard-profile-card">
+                                <div class="w-20 h-20 rounded-full mx-auto mb-4 border border-outline-variant bg-surface-container-high text-on-surface-variant flex items-center justify-center text-3xl font-bold" id="profile-avatar-large">
+                                    -
+                                </div>
+                                <h3 class="font-bold text-on-surface text-lg" id="profile-name-large">-</h3>
+                                <p class="text-sm text-on-surface-variant mb-6" id="profile-points-large">Total Points: -</p>
+                                <div class="grid grid-cols-2 gap-4 border-t border-outline-variant pt-6">
+                                    <div>
+                                        <p class="text-2xl font-bold text-on-surface" id="profile-completed-count">-</p>
+                                        <p class="text-xs text-on-surface-variant uppercase tracking-wide">Tasks Done</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-2xl font-bold text-on-surface" id="profile-pending-count">-</p>
+                                        <p class="text-xs text-on-surface-variant uppercase tracking-wide">Pending Tasks</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: PENDING TASKS -->
+                <div id="view-tasks-section" class="space-y-6 hidden">
+                    <div class="border-b border-outline-variant pb-2">
+                        <h3 class="text-2xl font-semibold text-on-surface font-headline">All Pending Assignments</h3>
+                        <p class="text-sm text-on-surface-variant mt-1">Open social media links and engage for at least 20 seconds to claim reward points.</p>
+                    </div>
+                    <div id="all-tasks-grid" class="grid gap-4">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+
+                <!-- VIEW 3: COMPLETED TASKS -->
+                <div id="view-completed-section" class="space-y-6 hidden">
+                    <div class="border-b border-outline-variant pb-2">
+                        <h3 class="text-2xl font-semibold text-on-surface font-headline">Completed Tasks</h3>
+                        <p class="text-sm text-on-surface-variant mt-1">Your past participation achievements.</p>
+                    </div>
+                    <div id="completed-tasks-list" class="grid gap-4">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+
+                <!-- VIEW 4: LEADERBOARD -->
+                <div id="view-leaderboard-section" class="max-w-3xl mx-auto hidden">
+                    <div class="bg-surface border border-outline-variant rounded-DEFAULT overflow-hidden shadow-md">
+                        <div class="p-6 border-b border-outline-variant bg-primary-container text-on-primary-container">
+                            <h3 class="text-lg font-bold flex items-center gap-2">
+                                <span class="material-symbols-outlined">workspace_premium</span>
+                                Leaderboard Rankings
+                            </h3>
+                            <p class="text-xs text-primary-fixed-dim mt-0.5">Calculated based on total points accumulated by students.</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
+                                    <tr>
+                                        <th class="px-6 py-4 font-semibold text-center w-20">Rank</th>
+                                        <th class="px-6 py-4 font-semibold">Student Name</th>
+                                        <th class="px-6 py-4 font-semibold text-right px-12">Total Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="full-leaderboard-rows" class="divide-y divide-outline-variant text-base">
+                                    <!-- Injected -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 5: PROFILE -->
+                <div id="view-profile-section" class="max-w-2xl mx-auto hidden">
+                    <div class="bg-surface border border-outline-variant p-8 rounded-DEFAULT shadow-sm space-y-8">
+                        <div class="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-outline-variant">
+                            <div class="w-24 h-24 rounded-full bg-primary-container text-primary flex items-center justify-center text-4xl font-black shadow-sm" id="full-profile-avatar">
+                                -
+                            </div>
+                            <div class="text-center sm:text-left space-y-1">
+                                <h3 class="text-2xl font-bold text-on-surface" id="full-profile-name">-</h3>
+                                <p class="text-sm text-on-surface-variant" id="full-profile-email">-</p>
+                                <div class="pt-2">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed text-xs font-semibold">Student Member</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+                            <div class="bg-surface-container-low p-6 border border-outline-variant rounded-DEFAULT">
+                                <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Total Points</p>
+                                <p class="text-3xl font-black text-primary" id="full-profile-points">-</p>
+                            </div>
+                            <div class="bg-surface-container-low p-6 border border-outline-variant rounded-DEFAULT">
+                                <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Tasks Done</p>
+                                <p class="text-3xl font-black text-tertiary" id="full-profile-completed">-</p>
+                            </div>
+                            <div class="bg-surface-container-low p-6 border border-outline-variant rounded-DEFAULT">
+                                <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Pending Tasks</p>
+                                <p class="text-3xl font-black text-on-surface-variant" id="full-profile-pending">-</p>
+                            </div>
+                        </div>
+
+                        <!-- Connected Accounts Display -->
+                        <div class="bg-surface-container-low p-6 border border-outline-variant rounded-DEFAULT space-y-4">
+                            <h4 class="text-xs font-bold text-on-surface uppercase tracking-wider">Connected Accounts</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="flex items-center justify-between p-3 bg-surface border border-outline-variant rounded-DEFAULT">
+                                    <span class="text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[16px] text-[#e1306c]">movie</span> Instagram
+                                    </span>
+                                    <span id="display-instagram" class="text-xs font-bold text-on-surface truncate max-w-[120px]">Not Available</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-surface border border-outline-variant rounded-DEFAULT">
+                                    <span class="text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[16px] text-[#ff0000]">play_circle</span> YouTube
+                                    </span>
+                                    <span id="display-youtube" class="text-xs font-bold text-on-surface truncate max-w-[120px]">Not Available</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-surface border border-outline-variant rounded-DEFAULT">
+                                    <span class="text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[16px] text-[#0a66c2]">work</span> LinkedIn
+                                    </span>
+                                    <span id="display-linkedin" class="text-xs font-bold text-on-surface truncate max-w-[120px]">Not Available</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-surface border border-outline-variant rounded-DEFAULT">
+                                    <span class="text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[16px] text-[#1877f2]">thumb_up</span> Facebook
+                                    </span>
+                                    <span id="display-facebook" class="text-xs font-bold text-on-surface truncate max-w-[120px]">Not Available</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Update Social Profiles Form -->
+                        <div class="border-t border-outline-variant pt-6 space-y-4">
+                            <h4 class="text-lg font-bold text-on-surface">Update Social Profiles</h4>
+                            <form id="social-profiles-form" class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="profile-instagram" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Instagram Username</label>
+                                        <input type="text" id="profile-instagram" placeholder="e.g. alex_mercer" class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT">
+                                    </div>
+                                    <div>
+                                        <label for="profile-youtube" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">YouTube Handle</label>
+                                        <input type="text" id="profile-youtube" placeholder="e.g. @alexmercer" class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT">
+                                    </div>
+                                    <div>
+                                        <label for="profile-linkedin" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">LinkedIn Profile URL</label>
+                                        <input type="url" id="profile-linkedin" placeholder="https://www.linkedin.com/in/..." class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT">
+                                    </div>
+                                    <div>
+                                        <label for="profile-facebook" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Facebook Profile URL/User</label>
+                                        <input type="text" id="profile-facebook" placeholder="e.g. alex.mercer.123" class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT">
+                                    </div>
+                                </div>
+                                <div class="flex justify-end pt-2">
+                                    <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors rounded-DEFAULT text-sm font-semibold h-10">
+                                        Save Profile Changes
+                                        <span class="material-symbols-outlined text-[18px]">save</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripting files -->
+    <script src="js/auth.js"></script>
+    <script src="js/student.js"></script>
+</body>
+</html>
