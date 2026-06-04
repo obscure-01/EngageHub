@@ -1,0 +1,575 @@
+// Student Dashboard Javascript - EngageHub
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Authenticate and enforce Student role
+    const studentUser = checkAuth('Student');
+    if (!studentUser) return; // checkAuth will handle redirect
+
+    // Display Header Info
+    document.getElementById('student-name-header').textContent = studentUser.name;
+    const avatarContainer = document.getElementById('avatar-container');
+    const userInitials = studentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    avatarContainer.textContent = userInitials;
+
+    // DOM Elements - Sidebar Navigation (Desktop & Mobile)
+    const views = {
+        dashboard: {
+            nav: document.getElementById('nav-dashboard'),
+            mobNav: document.getElementById('mobile-nav-dashboard'),
+            section: document.getElementById('view-dashboard-section')
+        },
+        tasks: {
+            nav: document.getElementById('nav-tasks'),
+            mobNav: document.getElementById('mobile-nav-tasks'),
+            section: document.getElementById('view-tasks-section')
+        },
+        completed: {
+            nav: document.getElementById('nav-completed'),
+            mobNav: document.getElementById('mobile-nav-completed'),
+            section: document.getElementById('view-completed-section')
+        },
+        leaderboard: {
+            nav: document.getElementById('nav-leaderboard'),
+            mobNav: document.getElementById('mobile-nav-leaderboard'),
+            section: document.getElementById('view-leaderboard-section')
+        },
+        profile: {
+            nav: document.getElementById('nav-profile'),
+            mobNav: document.getElementById('mobile-nav-profile'),
+            section: document.getElementById('view-profile-section')
+        }
+    };
+
+    // Navigation controller
+    function switchView(viewKey) {
+        Object.keys(views).forEach(key => {
+            const v = views[key];
+            if (key === viewKey) {
+                v.section.classList.remove('hidden');
+                if (v.nav) {
+                    v.nav.classList.add('text-primary-fixed-dim', 'font-bold', 'bg-on-secondary-container');
+                    v.nav.classList.remove('text-secondary-fixed-dim', 'font-normal');
+                }
+                if (v.mobNav) {
+                    v.mobNav.classList.add('text-primary-fixed-dim', 'font-bold', 'bg-on-secondary-container');
+                    v.mobNav.classList.remove('text-secondary-fixed-dim', 'font-normal');
+                }
+            } else {
+                v.section.classList.add('hidden');
+                if (v.nav) {
+                    v.nav.classList.remove('text-primary-fixed-dim', 'font-bold', 'bg-on-secondary-container');
+                    v.nav.classList.add('text-secondary-fixed-dim', 'font-normal');
+                }
+                if (v.mobNav) {
+                    v.mobNav.classList.remove('text-primary-fixed-dim', 'font-bold', 'bg-on-secondary-container');
+                    v.mobNav.classList.add('text-secondary-fixed-dim', 'font-normal');
+                }
+            }
+        });
+
+        // Load data relevant to view
+        if (viewKey === 'dashboard') {
+            fetchWelcomeDashboard();
+            fetchPendingTasks();
+            fetchLeaderboardSnippet();
+            fetchProfileSnippet();
+        } else if (viewKey === 'tasks') {
+            fetchPendingTasks();
+        } else if (viewKey === 'completed') {
+            fetchCompletedTasks();
+        } else if (viewKey === 'leaderboard') {
+            fetchFullLeaderboard();
+        } else if (viewKey === 'profile') {
+            fetchFullProfile();
+        }
+
+        // Close mobile sidebar if open
+        document.getElementById('mobile-sidebar').classList.add('hidden');
+    }
+
+    // Attach click events
+    Object.keys(views).forEach(key => {
+        const v = views[key];
+        if (v.nav) v.nav.addEventListener('click', () => switchView(key));
+        if (v.mobNav) v.mobNav.addEventListener('click', () => switchView(key));
+    });
+
+    // Mobile menu toggles
+    const mobileSidebar = document.getElementById('mobile-sidebar');
+    document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
+        mobileSidebar.classList.remove('hidden');
+    });
+    document.getElementById('mobile-menu-close').addEventListener('click', () => {
+        mobileSidebar.classList.add('hidden');
+    });
+    mobileSidebar.addEventListener('click', (e) => {
+        if (e.target === mobileSidebar) mobileSidebar.classList.add('hidden');
+    });
+
+    // Logout actions
+    document.getElementById('btn-logout').addEventListener('click', logout);
+    document.getElementById('btn-mobile-logout').addEventListener('click', logout);
+
+    // Dashboard shortcuts
+    document.getElementById('btn-view-all-pending').addEventListener('click', () => switchView('tasks'));
+    document.getElementById('btn-view-full-leaderboard').addEventListener('click', () => switchView('leaderboard'));
+
+    // Notification Alerts
+    const alertBanner = document.getElementById('student-alert');
+    const alertText = document.getElementById('alert-text');
+    const alertIcon = document.getElementById('alert-icon');
+
+    function showAlert(message, isError = false) {
+        alertText.textContent = message;
+        if (isError) {
+            alertIcon.textContent = 'warning';
+            alertBanner.className = 'mb-6 border-l-4 border-error bg-error-container text-on-error-container p-4 flex items-start justify-between shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT';
+        } else {
+            alertIcon.textContent = 'check_circle';
+            alertBanner.className = 'mb-6 border-l-4 border-tertiary bg-tertiary-container text-on-tertiary-container p-4 flex items-start justify-between shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT';
+        }
+        alertBanner.classList.remove('hidden');
+        // Scroll to top to see notification
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Automatically hide success alerts after 6s
+        if (!isError) {
+            setTimeout(() => alertBanner.classList.add('hidden'), 6000);
+        }
+    }
+
+    // API Helper utility
+    async function apiRequest(url, options = {}) {
+        const token = getToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        const config = { ...options, headers: { ...headers, ...options.headers } };
+
+        try {
+            const response = await fetch(url, config);
+            const data = await response.json();
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    clearAuth();
+                    window.location.href = '/';
+                }
+                throw new Error(data.error || 'Server error');
+            }
+            return data;
+        } catch (error) {
+            console.error(`API Error for ${url}:`, error);
+            throw error;
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // DATA FETCHERS & RENDERING
+    // ──────────────────────────────────────────────────────────
+
+    // Platform icon helper
+    function getPlatformIcon(platform) {
+        const plat = platform.toLowerCase();
+        if (plat === 'instagram') return 'movie';
+        if (plat === 'youtube') return 'play_circle';
+        if (plat === 'linkedin') return 'work';
+        if (plat === 'facebook') return 'thumb_up';
+        return 'link';
+    }
+
+    // 1. Welcome Card Points & Rank Display
+    async function fetchWelcomeDashboard() {
+        try {
+            const data = await apiRequest('/api/student/dashboard');
+            document.getElementById('welcome-name-card').textContent = `Welcome back, ${data.name}!`;
+            document.getElementById('welcome-points-card').textContent = data.points.toLocaleString();
+            document.getElementById('welcome-rank-card').textContent = data.rank;
+        } catch (error) {
+            showAlert('Failed to load student statistics', true);
+        }
+    }
+
+    // 2. Pending Tasks (rendered in Dashboard and Tasks page)
+    async function fetchPendingTasks() {
+        const dbGrid = document.getElementById('dashboard-tasks-grid');
+        const allGrid = document.getElementById('all-tasks-grid');
+
+        dbGrid.innerHTML = '<p class="text-sm text-on-surface-variant py-4">Loading tasks...</p>';
+        allGrid.innerHTML = '<p class="text-sm text-on-surface-variant py-4">Loading tasks...</p>';
+
+        try {
+            const tasks = await apiRequest('/api/student/tasks');
+            
+            if (tasks.length === 0) {
+                const emptyHTML = `
+                    <div class="bg-surface border border-outline-variant p-6 text-center rounded-DEFAULT">
+                        <span class="material-symbols-outlined text-4xl text-tertiary mb-2">task_alt</span>
+                        <p class="font-semibold text-on-surface text-base">All Caught Up!</p>
+                        <p class="text-xs text-on-surface-variant mt-1">There are no pending tasks for you right now.</p>
+                    </div>
+                `;
+                dbGrid.innerHTML = emptyHTML;
+                allGrid.innerHTML = emptyHTML;
+                return;
+            }
+
+            // Generate HTML for tasks
+            const buildCards = (taskList) => taskList.map(task => {
+                const platformIcon = getPlatformIcon(task.platform);
+                const isOpened = task.status === 'OPENED';
+                
+                // Button styling based on status
+                const buttonText = isOpened ? 'Mark Complete' : 'Open Task';
+                const buttonClass = isOpened
+                    ? 'bg-tertiary text-on-tertiary hover:bg-on-tertiary-fixed-variant'
+                    : 'bg-primary text-on-primary hover:bg-on-primary-fixed-variant';
+                const actionHandler = isOpened
+                    ? `completeTask(${task.id})`
+                    : `openTask(${task.id})`;
+
+                return `
+                    <div class="bg-surface border border-outline-variant p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors rounded-DEFAULT">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-primary-container text-on-primary-container flex items-center justify-center rounded-DEFAULT shrink-0">
+                                <span class="material-symbols-outlined">${platformIcon}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-on-surface text-sm sm:text-base">${escapeHTML(task.title)}</h4>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-xs text-on-surface-variant font-medium">${task.platform}</span>
+                                    ${isOpened ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">OPENED</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 sm:gap-6 shrink-0">
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-tertiary">+10 pts</p>
+                            </div>
+                            <button onclick="${actionHandler}" class="${buttonClass} px-3 sm:px-4 py-2 font-semibold text-xs sm:text-sm transition-colors rounded-DEFAULT shrink-0">
+                                ${buttonText}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Render top 3 in dashboard overview
+            dbGrid.innerHTML = buildCards(tasks.slice(0, 3));
+            // Render all in full tasks page
+            allGrid.innerHTML = buildCards(tasks);
+
+        } catch (error) {
+            dbGrid.innerHTML = '<p class="text-sm text-error py-4">Failed to load tasks.</p>';
+            allGrid.innerHTML = '<p class="text-sm text-error py-4">Failed to load tasks.</p>';
+        }
+    }
+
+    // Open Task Action
+    window.openTask = async function(taskId) {
+        alertBanner.classList.add('hidden'); // Clear alert banner
+        try {
+            const data = await apiRequest(`/api/student/tasks/${taskId}/open`, { method: 'POST' });
+            // Open task link in a new tab
+            window.open(data.socialLink, '_blank');
+            // Refresh task lists immediately
+            fetchPendingTasks();
+        } catch (error) {
+            showAlert('Failed to open task. Please try again.', true);
+        }
+    };
+
+    // Complete Task Action
+    window.completeTask = async function(taskId) {
+        alertBanner.classList.add('hidden'); // Clear alert banner
+        try {
+            const data = await apiRequest(`/api/student/tasks/${taskId}/complete`, { method: 'POST' });
+            // Show Success Notification
+            showAlert(data.message, false);
+            // Refresh dashboard data
+            fetchPendingTasks();
+            fetchWelcomeDashboard();
+        } catch (error) {
+            showAlert(error.message, true);
+        }
+    };
+
+    // 3. Completed Tasks list
+    async function fetchCompletedTasks() {
+        const completedList = document.getElementById('completed-tasks-list');
+        completedList.innerHTML = '<p class="text-sm text-on-surface-variant py-4">Loading completed tasks...</p>';
+
+        try {
+            const tasks = await apiRequest('/api/student/tasks/completed');
+            if (tasks.length === 0) {
+                completedList.innerHTML = `
+                    <div class="bg-surface border border-outline-variant p-8 text-center rounded-DEFAULT">
+                        <span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2">assignment_late</span>
+                        <p class="font-semibold text-on-surface text-base">No Completed Tasks Yet</p>
+                        <p class="text-xs text-on-surface-variant mt-1">Start engaging with assigned tasks in your dashboard to earn points.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            completedList.innerHTML = tasks.map(task => {
+                const platformIcon = getPlatformIcon(task.platform);
+                const formattedDate = new Date(task.completed_at).toLocaleString();
+                const totalPoints = 10 + (task.comment_points_awarded || 0);
+
+                let commentStatusBadge = '';
+                const commentStatus = task.comment_status || 'Not Attempted';
+                if (commentStatus === 'Comment Detected') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container text-on-tertiary-container border border-tertiary-fixed">Comment Detected (+5 pts)</span>`;
+                } else if (commentStatus === 'Comment Not Verified') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">Comment Not Verified</span>`;
+                } else if (commentStatus === 'Platform Not Available') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary-container text-on-secondary-container border border-outline-variant">Platform Not Available</span>`;
+                } else {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-container-high text-on-surface-variant">Comment Not Attempted</span>`;
+                }
+
+                // Verify comment button (only if not already successfully detected)
+                const showVerifyBtn = commentStatus !== 'Comment Detected';
+                const verifyBtnHTML = showVerifyBtn
+                    ? `<button onclick="verifyComment(${task.id})" class="bg-primary text-on-primary hover:bg-on-primary-fixed-variant px-3 py-1.5 font-semibold text-xs transition-colors rounded-DEFAULT shrink-0">
+                           Verify Comment
+                       </button>`
+                    : '';
+
+                return `
+                    <div class="bg-surface border border-outline-variant p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-surface-container-low transition-colors rounded-DEFAULT gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-surface-container text-on-surface-variant flex items-center justify-center rounded-DEFAULT shrink-0">
+                                <span class="material-symbols-outlined">${platformIcon}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-on-surface text-sm sm:text-base">${escapeHTML(task.title)}</h4>
+                                <div class="flex flex-wrap items-center gap-2 mt-1">
+                                    <span class="text-xs text-on-surface-variant font-medium">${task.platform} • Completed: ${formattedDate}</span>
+                                    ${commentStatusBadge}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between sm:justify-end gap-6 shrink-0">
+                            <div class="text-left sm:text-right">
+                                <p class="text-xs text-on-surface-variant">Time Spent: <strong>${task.time_spent}s</strong></p>
+                                <p class="text-sm font-bold text-tertiary">${totalPoints} pts earned</p>
+                            </div>
+                            ${verifyBtnHTML}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            completedList.innerHTML = '<p class="text-sm text-error py-4">Failed to load completed tasks.</p>';
+        }
+    }
+
+    // Action to verify a task comment
+    window.verifyComment = async function(taskId) {
+        alertBanner.classList.add('hidden'); // Clear alert banner
+        try {
+            const data = await apiRequest(`/api/student/tasks/${taskId}/verify-comment`, { method: 'POST' });
+            
+            // Check if comment was successfully verified (detected)
+            const isError = data.comment_status !== 'Comment Detected';
+            showAlert(data.message, isError);
+            
+            // Refresh lists and stats
+            fetchCompletedTasks();
+            fetchWelcomeDashboard();
+        } catch (error) {
+            showAlert(error.message || 'Verification failed. Please try again.', true);
+        }
+    };
+
+    // 4. Leaderboard Snippet (Top 3 + You)
+    async function fetchLeaderboardSnippet() {
+        const snippetList = document.getElementById('dashboard-leaderboard-list');
+        snippetList.innerHTML = '<p class="text-sm text-on-surface-variant p-4">Loading top performers...</p>';
+
+        try {
+            const rankings = await apiRequest('/api/student/leaderboard');
+            if (rankings.length === 0) {
+                snippetList.innerHTML = '<p class="text-sm text-on-surface-variant p-4">No student records.</p>';
+                return;
+            }
+
+            // Pick Top 3
+            const topThree = rankings.slice(0, 3);
+            
+            // Find current user row in rankings
+            const currentUserRankIdx = rankings.findIndex(r => r.id === studentUser.id);
+            const currentUserRankRow = currentUserRankIdx !== -1 ? rankings[currentUserRankIdx] : null;
+
+            // Check if current user is already in top 3
+            const userInTopThree = currentUserRankIdx !== -1 && currentUserRankIdx < 3;
+
+            let htmlContent = topThree.map(student => {
+                const isMe = student.id === studentUser.id;
+                const activeClass = isMe ? 'bg-primary-fixed bg-opacity-20 font-bold border-l-2 border-primary' : '';
+                const initials = student.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+                
+                return `
+                    <li class="p-4 flex items-center justify-between ${activeClass}">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-secondary w-6 text-center">${student.rank}</span>
+                            <div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-xs font-bold shrink-0">
+                                ${initials}
+                            </div>
+                            <span class="text-on-surface font-medium truncate max-w-[120px] sm:max-w-none">${escapeHTML(student.name)}${isMe ? ' (You)' : ''}</span>
+                        </div>
+                        <span class="font-bold text-primary">${student.points} pts</span>
+                    </li>
+                `;
+            }).join('');
+
+            // If current user is not in top 3, append their row at the end of list
+            if (!userInTopThree && currentUserRankRow) {
+                const initials = currentUserRankRow.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+                htmlContent += `
+                    <li class="p-4 flex items-center justify-between bg-primary-fixed bg-opacity-20 font-bold border-l-2 border-primary">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-primary w-6 text-center">${currentUserRankRow.rank}</span>
+                            <div class="w-8 h-8 rounded-full border-2 border-primary bg-primary-container text-primary flex items-center justify-center text-xs font-bold shrink-0">
+                                ${initials}
+                            </div>
+                            <span class="text-on-surface truncate max-w-[120px] sm:max-w-none">${escapeHTML(currentUserRankRow.name)} (You)</span>
+                        </div>
+                        <span class="font-bold text-primary">${currentUserRankRow.points} pts</span>
+                    </li>
+                `;
+            }
+
+            snippetList.innerHTML = htmlContent;
+
+        } catch (error) {
+            snippetList.innerHTML = '<p class="text-sm text-error p-4">Failed to load leaderboard snippet.</p>';
+        }
+    }
+
+    // 5. Full Leaderboard stand
+    async function fetchFullLeaderboard() {
+        const rowsContainer = document.getElementById('full-leaderboard-rows');
+        rowsContainer.innerHTML = '<tr><td colspan="3" class="px-6 py-6 text-center text-sm text-on-surface-variant">Loading rankings database...</td></tr>';
+
+        try {
+            const rankings = await apiRequest('/api/student/leaderboard');
+            if (rankings.length === 0) {
+                rowsContainer.innerHTML = '<tr><td colspan="3" class="px-6 py-6 text-center text-sm text-on-surface-variant">No student records.</td></tr>';
+                return;
+            }
+
+            rowsContainer.innerHTML = rankings.map(student => {
+                const isMe = student.id === studentUser.id;
+                const activeClass = isMe ? 'bg-primary-fixed bg-opacity-25 font-bold border-l-2 border-primary' : '';
+                
+                let medalClass = 'text-secondary';
+                if (student.rank == 1) medalClass = 'text-amber-500 font-black scale-110';
+                else if (student.rank == 2) medalClass = 'text-slate-400 font-bold';
+                else if (student.rank == 3) medalClass = 'text-amber-700';
+
+                return `
+                    <tr class="${activeClass} hover:bg-surface-container-low/50 transition-colors">
+                        <td class="px-6 py-4 text-center font-black ${medalClass}">${student.rank}</td>
+                        <td class="px-6 py-4 font-semibold text-on-surface">${escapeHTML(student.name)}${isMe ? ' (You)' : ''}</td>
+                        <td class="px-6 py-4 text-right px-12 font-black text-primary">${student.points} pts</td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (error) {
+            rowsContainer.innerHTML = '<tr><td colspan="3" class="px-6 py-6 text-center text-sm text-error">Failed to fetch leaderboard.</td></tr>';
+        }
+    }
+
+    // 6. Profile Snippet on Dashboard
+    async function fetchProfileSnippet() {
+        try {
+            const data = await apiRequest('/api/student/profile');
+            const initials = data.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            
+            document.getElementById('profile-avatar-large').textContent = initials;
+            document.getElementById('profile-name-large').textContent = data.name;
+            document.getElementById('profile-points-large').textContent = `Total Points: ${data.points.toLocaleString()}`;
+            document.getElementById('profile-completed-count').textContent = data.completedTasks;
+            document.getElementById('profile-pending-count').textContent = data.pendingTasks;
+        } catch (error) {
+            console.error('Failed to load profile snippet:', error);
+        }
+    }
+
+    // 7. Full Profile Page
+    async function fetchFullProfile() {
+        try {
+            const data = await apiRequest('/api/student/profile');
+            const initials = data.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+            document.getElementById('full-profile-avatar').textContent = initials;
+            document.getElementById('full-profile-name').textContent = data.name;
+            document.getElementById('full-profile-email').textContent = data.email;
+            document.getElementById('full-profile-points').textContent = data.points.toLocaleString();
+            document.getElementById('full-profile-completed').textContent = data.completedTasks;
+            document.getElementById('full-profile-pending').textContent = data.pendingTasks;
+
+            // Populate form inputs
+            document.getElementById('profile-instagram').value = data.instagram_username || '';
+            document.getElementById('profile-youtube').value = data.youtube_handle || '';
+            document.getElementById('profile-linkedin').value = data.linkedin_profile || '';
+            document.getElementById('profile-facebook').value = data.facebook_profile || '';
+
+            // Populate display cards
+            document.getElementById('display-instagram').textContent = data.instagram_username || 'Not Available';
+            document.getElementById('display-youtube').textContent = data.youtube_handle || 'Not Available';
+            document.getElementById('display-linkedin').textContent = data.linkedin_profile || 'Not Available';
+            document.getElementById('display-facebook').textContent = data.facebook_profile || 'Not Available';
+
+            // Tooltips
+            document.getElementById('display-linkedin').title = data.linkedin_profile || 'Not Available';
+            document.getElementById('display-facebook').title = data.facebook_profile || 'Not Available';
+
+        } catch (error) {
+            showAlert('Failed to load profile page data.', true);
+        }
+    }
+
+    // Bind Profile Update Form Submit
+    const socialForm = document.getElementById('social-profiles-form');
+    if (socialForm) {
+        socialForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const instagram_username = document.getElementById('profile-instagram').value.trim() || null;
+            const youtube_handle = document.getElementById('profile-youtube').value.trim() || null;
+            const linkedin_profile = document.getElementById('profile-linkedin').value.trim() || null;
+            const facebook_profile = document.getElementById('profile-facebook').value.trim() || null;
+
+            try {
+                const response = await apiRequest('/api/student/profile/social', {
+                    method: 'PUT',
+                    body: JSON.stringify({ instagram_username, youtube_handle, linkedin_profile, facebook_profile })
+                });
+                showAlert(response.message, false);
+                fetchFullProfile();
+            } catch (error) {
+                showAlert(error.message || 'Failed to update social profiles', true);
+            }
+        });
+    }
+
+    // Prevent HTML Injection
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    }
+
+    // Initialize: Start on Dashboard view
+    switchView('dashboard');
+});
