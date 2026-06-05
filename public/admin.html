@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html class="h-full bg-surface" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>EngageHub - Admin Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#d0e2ff",
+                        "error": "#da1e28",
+                        "inverse-surface": "#393939",
+                        "on-secondary-container": "#525252",
+                        "error-container": "#fff1f1",
+                        "on-surface": "#161616",
+                        "inverse-on-surface": "#f4f4f4",
+                        "secondary-container": "#e0e0e0",
+                        "on-primary-fixed": "#001d6c",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#f4f4f4",
+                        "surface-container-highest": "#c6c6c6",
+                        "primary-container": "#d0e2ff",
+                        "surface-container-low": "#f4f4f4",
+                        "surface-bright": "#ffffff",
+                        "surface-container": "#f4f4f4",
+                        "on-primary-fixed-variant": "#0043ce",
+                        "inverse-primary": "#78a9ff",
+                        "surface-dim": "#e0e0e0",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#198038",
+                        "surface-tint": "#0f62fe",
+                        "primary": "#0f62fe",
+                        "on-tertiary-fixed-variant": "#044317",
+                        "on-tertiary-container": "#044317",
+                        "surface": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#c6c6c6",
+                        "background": "#ffffff",
+                        "surface-container-high": "#e0e0e0",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#525252",
+                        "on-primary": "#ffffff",
+                        "outline": "#8d8d8d",
+                        "on-error-container": "#750e13",
+                        "on-tertiary-fixed": "#022d0d",
+                        "secondary-fixed": "#e0e0e0",
+                        "on-secondary-fixed": "#161616",
+                        "secondary": "#6f6f6f",
+                        "on-primary-container": "#161616",
+                        "primary-fixed-dim": "#78a9ff",
+                        "tertiary-fixed": "#a7f0ba",
+                        "outline-variant": "#e0e0e0",
+                        "on-background": "#161616",
+                        "tertiary-container": "#a7f0ba",
+                        "tertiary-fixed-dim": "#42be65",
+                        "on-secondary-fixed-variant": "#525252"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["IBM Plex Sans", "sans-serif"],
+                        "display": ["IBM Plex Sans", "sans-serif"],
+                        "body": ["IBM Plex Sans", "sans-serif"],
+                        "label": ["IBM Plex Sans", "sans-serif"]
+                    },
+                    "fontSize": {}
+                },
+            },
+        }
+    </script>
+    <style>
+        body { font-family: 'IBM Plex Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-full flex overflow-hidden">
+    
+    <!-- SideNavBar (Desktop) -->
+    <nav aria-label="Sidebar" class="bg-inverse-surface dark:bg-surface-container-highest text-primary dark:text-inverse-primary font-headline text-body-sm font-normal h-screen w-64 flex flex-col border-r border-outline-variant fixed inset-y-0 left-0 z-50 overflow-y-auto hidden md:flex">
+        <!-- Brand/Header -->
+        <div class="flex items-center gap-3 p-6 border-b border-on-secondary-container/20">
+            <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">hub</span>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-inverse-on-surface dark:text-on-surface tracking-tight">EngageHub</h1>
+                <p class="text-xs text-secondary-fixed-dim">Admin Portal</p>
+            </div>
+        </div>
+        <!-- Navigation Links -->
+        <ul class="flex flex-col py-4 gap-1 flex-1 px-3">
+            <li>
+                <button id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-primary-fixed-dim font-bold bg-on-secondary-container transition-all duration-150 text-left">
+                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                    Dashboard
+                </button>
+            </li>
+            <li>
+                <button id="nav-create-task" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    Create Task
+                </button>
+            </li>
+            <li>
+                <button id="nav-manage-tasks" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                    <span class="material-symbols-outlined">task</span>
+                    Manage Tasks
+                </button>
+            </li>
+            <li>
+                <button id="nav-analytics" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                    <span class="material-symbols-outlined">analytics</span>
+                    Analytics
+                </button>
+            </li>
+            <li>
+                <button id="nav-students" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                    <span class="material-symbols-outlined">group</span>
+                    Students
+                </button>
+            </li>
+            <li>
+                <button id="nav-tracking" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                    <span class="material-symbols-outlined">checklist</span>
+                    Task Tracking
+                </button>
+            </li>
+            <li>
+                <button id="nav-leaderboard" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                    <span class="material-symbols-outlined">leaderboard</span>
+                    Leaderboard
+                </button>
+            </li>
+        </ul>
+        <!-- Bottom/Logout -->
+        <div class="p-4 border-t border-on-secondary-container/20 mt-auto">
+            <button id="btn-logout" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container hover:text-inverse-on-surface transition-colors cursor-pointer transition-all duration-150 text-left">
+                <span class="material-symbols-outlined">logout</span>
+                Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden md:ml-64">
+        
+        <!-- TopAppBar (Mobile Only) -->
+        <header class="bg-surface dark:bg-surface-dim text-primary dark:text-inverse-primary font-headline text-label-lg font-medium flex justify-between items-center h-16 px-6 sticky top-0 z-40 border-b border-outline-variant md:hidden">
+            <div class="flex items-center gap-2">
+                <button id="mobile-menu-toggle" class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-70 p-1">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <span class="text-lg font-black text-on-surface dark:text-inverse-on-surface tracking-tight">EngageHub</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden shrink-0 flex items-center justify-center text-on-surface-variant">
+                    <span class="material-symbols-outlined text-sm">person</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile SideNavBar Panel -->
+        <div id="mobile-sidebar" class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden md:hidden">
+            <div class="bg-inverse-surface w-64 h-full flex flex-col border-r border-outline-variant p-4">
+                <div class="flex justify-between items-center pb-6 border-b border-on-secondary-container/20 mb-4">
+                    <span class="text-xl font-bold text-inverse-on-surface">EngageHub</span>
+                    <button id="mobile-menu-close" class="text-secondary-fixed-dim hover:text-inverse-on-surface">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <ul class="flex flex-col gap-2 flex-1">
+                    <li>
+                        <button id="mobile-nav-dashboard" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-primary-fixed-dim font-bold bg-on-secondary-container transition-all duration-150 text-left">
+                            <span class="material-symbols-outlined">dashboard</span>
+                            Dashboard
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-create-task" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">add_circle</span>
+                            Create Task
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-manage-tasks" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">task</span>
+                            Manage Tasks
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-analytics" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">analytics</span>
+                            Analytics
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-students" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">group</span>
+                            Students
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-tracking" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">checklist</span>
+                            Task Tracking
+                        </button>
+                    </li>
+                    <li>
+                        <button id="mobile-nav-leaderboard" class="mobile-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim font-normal hover:bg-on-secondary-container transition-colors text-left">
+                            <span class="material-symbols-outlined">leaderboard</span>
+                            Leaderboard
+                        </button>
+                    </li>
+                </ul>
+                <div class="border-t border-on-secondary-container/20 pt-4">
+                    <button id="btn-mobile-logout" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary-fixed-dim hover:text-inverse-on-surface text-left">
+                        <span class="material-symbols-outlined">logout</span>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Canvas -->
+        <main class="flex-1 overflow-y-auto bg-surface-container-low p-4 md:p-8">
+            <div class="max-w-7xl mx-auto space-y-8">
+                
+                <!-- Page Header (Shared) -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 id="page-title" class="text-3xl font-semibold text-on-surface tracking-tight">Dashboard Overview</h2>
+                        <p id="page-subtitle" class="text-sm text-on-surface-variant mt-1">Monitor task engagement and student performance.</p>
+                    </div>
+                    <div id="header-actions" class="flex items-center gap-3">
+                        <button id="btn-create-task-header" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors rounded-DEFAULT text-sm font-medium h-10">
+                            <span class="material-symbols-outlined text-[20px]">add</span>
+                            Create Task
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Global Notification Toast -->
+                <div id="admin-toast" class="bg-surface border border-outline-variant p-4 hidden flex items-center justify-between shadow-lg max-w-xl transition-all duration-200">
+                    <div class="flex items-center gap-3">
+                        <span id="toast-icon" class="material-symbols-outlined text-tertiary">check_circle</span>
+                        <span id="toast-message" class="text-sm font-medium">Operation completed successfully</span>
+                    </div>
+                    <button onclick="document.getElementById('admin-toast').classList.add('hidden')" class="text-on-surface-variant hover:text-on-surface">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+
+                <!-- VIEW 1: DASHBOARD OVERVIEW -->
+                <div id="view-dashboard-section" class="space-y-8">
+                    <!-- KPI Cards Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Total Students -->
+                        <div class="bg-surface p-6 flex flex-col border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <span class="material-symbols-outlined text-6xl text-primary" style="font-variation-settings: 'FILL' 1;">groups</span>
+                            </div>
+                            <p class="text-sm font-medium text-on-surface-variant mb-1 z-10 relative">Total Students</p>
+                            <div class="flex items-end gap-3 z-10 relative">
+                                <h3 id="kpi-total-students" class="text-3xl font-bold text-on-surface">-</h3>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-surface-container-high z-10 relative flex justify-between items-center">
+                                <span class="text-xs text-secondary">Registered students in database</span>
+                            </div>
+                        </div>
+                        <!-- Total Tasks -->
+                        <div class="bg-surface p-6 flex flex-col border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <span class="material-symbols-outlined text-6xl text-primary" style="font-variation-settings: 'FILL' 1;">assignment</span>
+                            </div>
+                            <p class="text-sm font-medium text-on-surface-variant mb-1 z-10 relative">Total Tasks</p>
+                            <div class="flex items-end gap-3 z-10 relative">
+                                <h3 id="kpi-total-tasks" class="text-3xl font-bold text-on-surface">-</h3>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-surface-container-high z-10 relative flex justify-between items-center">
+                                <span class="text-xs text-secondary">Active social media tasks</span>
+                            </div>
+                        </div>
+                        <!-- Engagement Rate -->
+                        <div class="bg-surface p-6 flex flex-col border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <span class="material-symbols-outlined text-6xl text-tertiary" style="font-variation-settings: 'FILL' 1;">analytics</span>
+                            </div>
+                            <p class="text-sm font-medium text-on-surface-variant mb-1 z-10 relative">Engagement Rate</p>
+                            <div class="flex items-end gap-3 z-10 relative">
+                                <h3 id="kpi-engagement-rate" class="text-3xl font-bold text-on-surface">-</h3>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-surface-container-high z-10 relative">
+                                <p class="text-xs text-secondary">Completed tasks out of total assigned</p>
+                            </div>
+                        </div>
+                        <!-- Pending Students -->
+                        <div class="bg-surface p-6 flex flex-col border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <span class="material-symbols-outlined text-6xl text-on-surface-variant" style="font-variation-settings: 'FILL' 1;">person_search</span>
+                            </div>
+                            <p class="text-sm font-medium text-on-surface-variant mb-1 z-10 relative">Pending Students</p>
+                            <div class="flex items-end gap-3 z-10 relative">
+                                <h3 id="kpi-pending-students" class="text-3xl font-bold text-on-surface">-</h3>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-surface-container-high z-10 relative">
+                                <p class="text-xs text-secondary">Students with remaining tasks</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content Row (Form + Table) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Left: Quick Create -->
+                        <div class="lg:col-span-1 flex flex-col">
+                            <div class="bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT flex-1">
+                                <div class="px-6 py-5 border-b border-surface-container">
+                                    <h3 class="text-lg font-semibold text-on-surface flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">add_task</span>
+                                        Quick Create Task
+                                    </h3>
+                                    <p class="text-sm text-on-surface-variant mt-1">Deploy a new engagement task instantly.</p>
+                                </div>
+                                <form id="quick-create-form" class="p-6 space-y-5">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-on-surface mb-1.5" for="quickTaskTitle">Task Title</label>
+                                        <input class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT" id="quickTaskTitle" name="taskTitle" placeholder="e.g., Like latest IG reel" type="text" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-on-surface mb-1.5" for="quickPlatform">Platform</label>
+                                        <div class="relative">
+                                            <select class="w-full appearance-none border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT pr-8" id="quickPlatform" name="platform" required>
+                                                <option disabled selected value="">Select platform...</option>
+                                                <option value="Instagram">Instagram</option>
+                                                <option value="YouTube">YouTube</option>
+                                                <option value="LinkedIn">LinkedIn</option>
+                                                <option value="Facebook">Facebook</option>
+                                            </select>
+                                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+                                                <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-on-surface mb-1.5" for="quickTaskDuration">Task Duration</label>
+                                        <div class="relative">
+                                            <select class="w-full appearance-none border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT pr-8" id="quickTaskDuration" name="duration" required>
+                                                <option value="1">1 Day</option>
+                                                <option value="2">2 Days</option>
+                                                <option value="3">3 Days</option>
+                                                <option value="5">5 Days</option>
+                                                <option selected value="7">7 Days</option>
+                                                <option value="14">14 Days</option>
+                                                <option value="30">30 Days</option>
+                                                <option value="custom">Custom Number of Days...</option>
+                                            </select>
+                                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+                                                <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="quickCustomDurationContainer" class="hidden">
+                                        <label class="block text-xs font-semibold text-on-surface mb-1.5" for="quickCustomDuration">Custom Days</label>
+                                        <input class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT" id="quickCustomDuration" name="customDuration" type="number" min="1" placeholder="Enter number of days">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-on-surface mb-1.5" for="quickTaskLink">Social Media Link</label>
+                                        <input class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT" id="quickTaskLink" name="taskLink" placeholder="https://..." type="url" required>
+                                    </div>
+                                    <div class="text-xs font-medium text-secondary">
+                                        <p>Fixed Reward: 10 Points per Completed Task</p>
+                                    </div>
+                                    <div class="pt-4">
+                                        <button class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors rounded-DEFAULT text-sm font-semibold h-12 shadow-[0_2px_6px_rgba(15,98,254,0.3)]" type="submit">
+                                            Publish Task
+                                            <span class="material-symbols-outlined text-[20px]">send</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Right: Recent Tasks -->
+                        <div class="lg:col-span-2 flex flex-col">
+                            <div class="bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT flex-1 overflow-hidden flex flex-col">
+                                <div class="px-6 py-5 border-b border-surface-container flex justify-between items-center">
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-on-surface">Recent Tasks</h3>
+                                        <p class="text-sm text-on-surface-variant mt-1">Manage active and past engagement tasks.</p>
+                                    </div>
+                                    <button id="btn-view-all-tasks" class="text-primary text-sm font-semibold hover:underline flex items-center gap-1">
+                                        View All
+                                        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                                    </button>
+                                </div>
+                                <div class="overflow-x-auto flex-grow">
+                                    <table class="w-full text-left text-sm whitespace-nowrap">
+                                        <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                            <tr>
+                                                <th class="px-6 py-3 font-semibold" scope="col">Task Name</th>
+                                                <th class="px-6 py-3 font-semibold" scope="col">Platform</th>
+                                                <th class="px-6 py-3 font-semibold text-right" scope="col">Points</th>
+                                                <th class="px-6 py-3 font-semibold text-right" scope="col">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recent-tasks-list" class="divide-y divide-surface-container">
+                                            <!-- Dynamically injected -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: CREATE TASK -->
+                <div id="view-create-task-section" class="max-w-2xl mx-auto hidden">
+                    <div class="bg-surface border border-surface-container shadow-md rounded-DEFAULT">
+                        <div class="px-6 py-5 border-b border-surface-container">
+                            <h3 class="text-lg font-semibold text-on-surface">Create Social Engagement Task</h3>
+                            <p class="text-sm text-on-surface-variant mt-1">Assign an Instagram reel or YouTube video task to all registered students.</p>
+                        </div>
+                        <form id="standalone-create-form" class="p-6 space-y-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-on-surface mb-2" for="taskTitle">Task Title</label>
+                                <input class="w-full border-b border-surface-container-high bg-surface-container-low px-4 py-2.5 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-11 rounded-t-DEFAULT" id="taskTitle" placeholder="e.g., Share thoughts on tech seminar video" type="text" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-on-surface mb-2" for="platform">Platform</label>
+                                <div class="relative">
+                                    <select class="w-full appearance-none border-b border-surface-container-high bg-surface-container-low px-4 py-2.5 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-11 rounded-t-DEFAULT pr-10" id="platform" required>
+                                        <option disabled selected value="">Select platform...</option>
+                                        <option value="Instagram">Instagram</option>
+                                        <option value="YouTube">YouTube</option>
+                                        <option value="LinkedIn">LinkedIn</option>
+                                        <option value="Facebook">Facebook</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant">
+                                        <span class="material-symbols-outlined text-[24px]">expand_more</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-on-surface mb-2" for="taskDuration">Task Duration</label>
+                                <div class="relative">
+                                    <select class="w-full appearance-none border-b border-surface-container-high bg-surface-container-low px-4 py-2.5 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-11 rounded-t-DEFAULT pr-10" id="taskDuration" required>
+                                        <option value="1">1 Day</option>
+                                        <option value="2">2 Days</option>
+                                        <option value="3">3 Days</option>
+                                        <option value="5">5 Days</option>
+                                        <option selected value="7">7 Days</option>
+                                        <option value="14">14 Days</option>
+                                        <option value="30">30 Days</option>
+                                        <option value="custom">Custom Number of Days...</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant">
+                                        <span class="material-symbols-outlined text-[24px]">expand_more</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="customDurationContainer" class="hidden">
+                                <label class="block text-sm font-semibold text-on-surface mb-2" for="customDuration">Custom Days</label>
+                                <input class="w-full border-b border-surface-container-high bg-surface-container-low px-4 py-2.5 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-11 rounded-t-DEFAULT" id="customDuration" type="number" min="1" placeholder="Enter number of days">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-on-surface mb-2" for="taskLink">Social Media Link</label>
+                                <input class="w-full border-b border-surface-container-high bg-surface-container-low px-4 py-2.5 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-11 rounded-t-DEFAULT" id="taskLink" placeholder="e.g., https://www.instagram.com/reel/..." type="url" required>
+                            </div>
+                            <div class="bg-surface-container-low p-4 text-sm text-secondary rounded-DEFAULT flex items-center gap-2">
+                                <span class="material-symbols-outlined text-primary">info</span>
+                                <span>Completed tasks are automatically rewarded with <strong>10 points</strong>. This reward parameter is fixed and cannot be changed.</span>
+                            </div>
+                            <div class="pt-4 flex gap-4">
+                                <button id="btn-cancel-create" type="button" class="w-1/3 inline-flex items-center justify-center px-4 py-2 border border-outline text-on-surface hover:bg-surface-container transition-colors rounded-DEFAULT text-sm font-medium h-12">Cancel</button>
+                                <button type="submit" class="w-2/3 inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors rounded-DEFAULT text-sm font-semibold h-12 shadow-[0_2px_6px_rgba(15,98,254,0.3)]">
+                                    Publish Task
+                                    <span class="material-symbols-outlined text-[20px]">send</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: MANAGE TASKS -->
+                <div id="view-manage-tasks-section" class="hidden space-y-6">
+                    <!-- Tab Navigation -->
+                    <div class="flex border-b border-outline-variant">
+                        <button id="btn-active-tasks-tab" class="px-6 py-3 border-b-2 border-primary text-primary font-semibold text-sm focus:outline-none transition-colors">
+                            Active Tasks
+                        </button>
+                        <button id="btn-previous-tasks-tab" class="px-6 py-3 text-secondary hover:text-on-surface font-semibold text-sm focus:outline-none transition-colors">
+                            Previous Tasks
+                        </button>
+                    </div>
+
+                    <!-- Active Tasks Container -->
+                    <div id="active-tasks-container" class="bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT overflow-hidden">
+                        <div class="px-6 py-5 border-b border-surface-container flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-on-surface">Active Social Media Tasks</h3>
+                                <p class="text-sm text-on-surface-variant mt-1">Review active college engagement tasks that are currently visible to students.</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                    <tr>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Task ID</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Task Name</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Platform</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Social Media Link</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Expiry Date</th>
+                                        <th class="px-6 py-3 font-semibold text-right" scope="col">Points</th>
+                                        <th class="px-6 py-3 font-semibold text-right" scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="active-tasks-list" class="divide-y divide-surface-container">
+                                    <!-- Dynamically injected -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Previous Tasks Container (Hidden by default) -->
+                    <div id="previous-tasks-container" class="bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT overflow-hidden hidden">
+                        <div class="px-6 py-5 border-b border-surface-container flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-on-surface">Previous / Expired Tasks</h3>
+                                <p class="text-sm text-on-surface-variant mt-1">Analytics and historical logs of expired tasks.</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                    <tr>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Task Name</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Platform</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Created Date</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Expiry Date</th>
+                                        <th class="px-6 py-3 font-semibold text-center" scope="col">Total Assigned</th>
+                                        <th class="px-6 py-3 font-semibold text-center" scope="col">Students Completed</th>
+                                        <th class="px-6 py-3 font-semibold text-center" scope="col">Completion Rate</th>
+                                        <th class="px-6 py-3 font-semibold text-right" scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previous-tasks-list" class="divide-y divide-surface-container">
+                                    <!-- Dynamically injected -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 4: ANALYTICS -->
+                <div id="view-analytics-section" class="space-y-8 hidden">
+                    <!-- KPI Analytics Cards Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div class="bg-surface p-5 border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT">
+                            <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Total Students</p>
+                            <h3 id="analytics-kpi-students" class="text-3xl font-bold text-on-surface">-</h3>
+                        </div>
+                        <div class="bg-surface p-5 border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT">
+                            <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Total Tasks</p>
+                            <h3 id="analytics-kpi-tasks" class="text-3xl font-bold text-on-surface">-</h3>
+                        </div>
+                        <div class="bg-surface p-5 border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT">
+                            <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Completed Tasks</p>
+                            <h3 id="analytics-kpi-completed" class="text-3xl font-bold text-tertiary">-</h3>
+                        </div>
+                        <div class="bg-surface p-5 border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT">
+                            <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Pending Tasks</p>
+                            <h3 id="analytics-kpi-pending" class="text-3xl font-bold text-on-surface-variant">-</h3>
+                        </div>
+                        <div class="bg-surface p-5 border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT">
+                            <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Engagement Rate</p>
+                            <h3 id="analytics-kpi-rate" class="text-3xl font-bold text-primary">-</h3>
+                        </div>
+                    </div>
+
+                    <!-- Comment Engagement Summary KPI Section -->
+                    <div class="bg-surface border border-outline-variant p-6 rounded-DEFAULT space-y-4 shadow-[0_2px_6px_rgba(0,0,0,0.05)]">
+                        <h4 class="text-sm font-bold text-on-surface uppercase tracking-wider">Comment Engagement Overview</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div class="bg-surface-container-low p-5 border border-outline-variant rounded-DEFAULT">
+                                <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Total Verified Comments</p>
+                                <h3 id="analytics-kpi-comments-total" class="text-3xl font-bold text-primary">-</h3>
+                            </div>
+                            <div class="bg-surface-container-low p-5 border border-outline-variant rounded-DEFAULT">
+                                <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Instagram Comments</p>
+                                <h3 id="analytics-kpi-comments-instagram" class="text-3xl font-bold text-on-surface">-</h3>
+                            </div>
+                            <div class="bg-surface-container-low p-5 border border-outline-variant rounded-DEFAULT">
+                                <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">YouTube Comments</p>
+                                <h3 id="analytics-kpi-comments-youtube" class="text-3xl font-bold text-on-surface">-</h3>
+                            </div>
+                            <div class="bg-surface-container-low p-5 border border-outline-variant rounded-DEFAULT">
+                                <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">LinkedIn Comments</p>
+                                <h3 id="analytics-kpi-comments-linkedin" class="text-3xl font-bold text-on-surface">-</h3>
+                            </div>
+                            <div class="bg-surface-container-low p-5 border border-outline-variant rounded-DEFAULT">
+                                <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Facebook Comments</p>
+                                <h3 id="analytics-kpi-comments-facebook" class="text-3xl font-bold text-on-surface">-</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Task performance analysis -->
+                        <div class="lg:col-span-2 bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT overflow-hidden">
+                            <div class="px-6 py-5 border-b border-surface-container bg-surface-container-low">
+                                <h3 class="text-lg font-bold text-on-surface">Task Completion Breakdown</h3>
+                                <p class="text-xs text-on-surface-variant">Engagement rates calculated on a task-by-task basis.</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                        <tr>
+                                            <th class="px-6 py-3 font-semibold">Task Title</th>
+                                            <th class="px-6 py-3 font-semibold">Platform</th>
+                                            <th class="px-6 py-3 font-semibold text-center">Opened</th>
+                                            <th class="px-6 py-3 font-semibold text-center">Completed</th>
+                                            <th class="px-6 py-3 font-semibold text-center">Pending</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="analytics-tasks-list" class="divide-y divide-surface-container">
+                                        <!-- Dynamically injected -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Student performance analysis -->
+                        <div class="lg:col-span-1 bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT overflow-hidden">
+                            <div class="px-6 py-5 border-b border-surface-container bg-surface-container-low">
+                                <h3 class="text-lg font-bold text-on-surface">Student Activity Metrics</h3>
+                                <p class="text-xs text-on-surface-variant">Individual points earned and pending counts.</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                        <tr>
+                                            <th class="px-6 py-3 font-semibold">Student Name</th>
+                                            <th class="px-6 py-3 font-semibold text-center">Completed</th>
+                                            <th class="px-6 py-3 font-semibold text-right">Points</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="analytics-students-list" class="divide-y divide-surface-container">
+                                        <!-- Dynamically injected -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Performers & Comment Engagement Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                        <!-- Top Performers Section -->
+                        <div class="bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT overflow-hidden">
+                            <div class="px-6 py-5 border-b border-surface-container bg-surface-container-low">
+                                <h3 class="text-lg font-bold text-on-surface">Top Performers</h3>
+                                <p class="text-xs text-on-surface-variant">Top 5 students by points.</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                        <tr>
+                                            <th class="px-6 py-3 font-semibold text-center w-20">Rank</th>
+                                            <th class="px-6 py-3 font-semibold">Student Name</th>
+                                            <th class="px-6 py-3 font-semibold text-right px-12">Points</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="analytics-top-performers-list" class="divide-y divide-surface-container text-sm">
+                                        <!-- Dynamically injected -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Top Comment Engagement Students -->
+                        <div class="bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT overflow-hidden">
+                            <div class="px-6 py-5 border-b border-surface-container bg-surface-container-low">
+                                <h3 class="text-lg font-bold text-on-surface">Top Comment Engagement Students</h3>
+                                <p class="text-xs text-on-surface-variant">Top 5 students by verified comments count.</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                        <tr>
+                                            <th class="px-6 py-3 font-semibold text-center w-20">Rank</th>
+                                            <th class="px-6 py-3 font-semibold">Student Name</th>
+                                            <th class="px-6 py-3 font-semibold text-right px-12">Verified Comments</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="analytics-top-commenters-list" class="divide-y divide-surface-container text-sm">
+                                        <!-- Dynamically injected -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 4b: STUDENTS MANAGEMENT -->
+                <div id="view-students-section" class="hidden">
+                    <div class="bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT overflow-hidden">
+                        <div class="px-6 py-5 border-b border-surface-container flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-on-surface">Registered Students</h3>
+                                <p class="text-sm text-on-surface-variant mt-1">View, track, and manage student accounts.</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                    <tr>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Student Name</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Email Address</th>
+                                        <th class="px-6 py-3 font-semibold text-right" scope="col">Points</th>
+                                        <th class="px-6 py-3 font-semibold text-center" scope="col">Completed Tasks</th>
+                                        <th class="px-6 py-3 font-semibold text-center" scope="col">Pending Tasks</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Date Registered</th>
+                                        <th class="px-6 py-3 font-semibold text-right" scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-management-list" class="divide-y divide-surface-container">
+                                    <!-- Dynamically injected -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 4c: TASK TRACKING -->
+                <div id="view-tracking-section" class="space-y-6 hidden">
+                    <div class="bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT p-6 space-y-4">
+                        <h3 class="text-lg font-semibold text-on-surface">Filter Task Progress</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Filter by Student -->
+                            <div>
+                                <label class="block text-xs font-semibold text-on-surface mb-1.5" for="filter-student">Filter By Student</label>
+                                <div class="relative">
+                                    <select class="w-full appearance-none border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT pr-8" id="filter-student">
+                                        <option value="ALL">All Students</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+                                        <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Filter by Task -->
+                            <div>
+                                <label class="block text-xs font-semibold text-on-surface mb-1.5" for="filter-task">Filter By Task</label>
+                                <div class="relative">
+                                    <select class="w-full appearance-none border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT pr-8" id="filter-task">
+                                        <option value="ALL">All Tasks</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+                                        <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Filter by Status -->
+                            <div>
+                                <label class="block text-xs font-semibold text-on-surface mb-1.5" for="filter-status">Filter By Status</label>
+                                <div class="relative">
+                                    <select class="w-full appearance-none border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-sm focus:border-primary focus:ring-0 focus:outline-none transition-colors h-10 rounded-t-DEFAULT pr-8" id="filter-status">
+                                        <option value="ALL">All Statuses</option>
+                                        <option value="PENDING">PENDING</option>
+                                        <option value="OPENED">OPENED</option>
+                                        <option value="COMPLETED">COMPLETED</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+                                        <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-surface-container shadow-[0_2px_6px_rgba(0,0,0,0.05)] rounded-DEFAULT overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                    <tr>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Student Name</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Task Name</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Platform</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Status</th>
+                                        <th class="px-6 py-3 font-semibold" scope="col">Comment Status</th>
+                                        <th class="px-6 py-3 font-semibold text-right" scope="col">Points Earned</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tracking-records-list" class="divide-y divide-surface-container">
+                                    <!-- Dynamically injected -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 5: LEADERBOARD -->
+                <div id="view-leaderboard-section" class="max-w-4xl mx-auto hidden">
+                    <div class="bg-surface border border-surface-container shadow-md rounded-DEFAULT overflow-hidden">
+                        <div class="px-6 py-5 border-b border-surface-container bg-primary-container text-on-primary-container flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-bold flex items-center gap-2">
+                                    <span class="material-symbols-outlined">workspace_premium</span>
+                                    Leaderboard Standings
+                                </h3>
+                                <p class="text-xs text-primary-fixed-dim mt-0.5">Live rankings of students by total engagement points.</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-surface-container-low text-on-surface-variant border-b border-surface-container">
+                                    <tr>
+                                        <th class="px-6 py-4 font-semibold text-center w-20">Rank</th>
+                                        <th class="px-6 py-4 font-semibold">Student Name</th>
+                                        <th class="px-6 py-4 font-semibold text-right px-12">Total Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-list" class="divide-y divide-surface-container text-base">
+                                    <!-- Dynamically injected -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Student Progress Detail Modal (Carbon Theme) -->
+    <div id="progress-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 backdrop-blur-sm hidden">
+        <div class="bg-surface w-full max-w-2xl p-8 border border-outline-variant shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button id="btn-close-progress-modal" class="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface transition-colors">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+            
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 bg-primary-container text-primary rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined">assignment_ind</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-on-surface font-headline">Student Progress Detail</h3>
+                    <p class="text-xs text-on-surface-variant" id="progress-modal-student-name">Loading student profile...</p>
+                </div>
+            </div>
+
+            <div class="overflow-y-auto max-h-[400px] border border-outline-variant rounded-DEFAULT">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
+                        <tr>
+                            <th class="px-4 py-2 font-semibold">Task Name</th>
+                            <th class="px-4 py-2 font-semibold">Platform</th>
+                            <th class="px-4 py-2 font-semibold">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="progress-modal-tasks-list" class="divide-y divide-surface-container">
+                        <!-- Dynamic list -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripting files -->
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
