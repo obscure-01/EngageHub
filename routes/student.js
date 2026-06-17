@@ -458,19 +458,38 @@ async function fetchYouTubeComments(videoId, apiKey) {
 }
 
 // Diagnostic helper
-function logDiagnostic(data) {
-  // In-memory storage for verification diagnostics
-  if (!global.verificationDiagnostics) {
-    global.verificationDiagnostics = [];
-    global.lastDatabaseError = null;
-    global.lastDatabaseQuery = null;
-  }
-  global.verificationDiagnostics.unshift({
-    timestamp: new Date().toISOString(),
-    ...data
-  });
-  if (global.verificationDiagnostics.length > 100) {
-    global.verificationDiagnostics.pop();
+async function logDiagnostic(data) {
+  try {
+    const insertQuery = `
+      INSERT INTO verification_audit_logs 
+      (task_id, student_id, student_name, youtube_handle, platform, video_id, source, comments_found, match_found, status, reason)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `;
+    const values = [
+      data.taskId || null,
+      data.studentId || null,
+      data.studentName || null,
+      data.storedHandle || null,
+      data.platform || 'YouTube',
+      data.videoId || null,
+      data.verificationSource || 'INTERNAL',
+      data.retrievedCommentsCount || data.numComments || 0,
+      data.matchResult || false,
+      data.status || 'Unknown',
+      data.reason || ''
+    ];
+    await db.query(insertQuery, values);
+    
+    // Implement Option B: Keep latest 5000 (run asynchronously to not block)
+    db.query(`
+      DELETE FROM verification_audit_logs 
+      WHERE id NOT IN (
+        SELECT id FROM verification_audit_logs ORDER BY timestamp DESC LIMIT 5000
+      )
+    `).catch(err => console.error('Error cleaning up audit logs:', err));
+    
+  } catch (err) {
+    console.error('Error logging verification audit record:', err);
   }
 }
 
@@ -753,13 +772,23 @@ router.post('/tasks/:id/verify-comment', async (req, res) => {
   }
 });
 
-router.get('/system/verification-debug', (req, res) => {
-  res.json({
-    verificationStage: global.verificationDiagnostics.length > 0 ? global.verificationDiagnostics[0].status : 'None',
-    databaseStatus: global.lastDatabaseError ? 'Error' : 'OK',
-    lastVerificationError: global.lastDatabaseError,
-    lastFailedQuery: global.lastDatabaseQuery
-  });
+router.get('/system/verification-debug', async (req, res) => {
+  try {
+    const result = await db.query('SELECT status FROM verification_audit_logs ORDER BY timestamp DESC LIMIT 1');
+    res.json({
+      verificationStage: result.rows.length > 0 ? result.rows[0].status : 'None',
+      databaseStatus: global.lastDatabaseError ? 'Error' : 'OK',
+      lastVerificationError: global.lastDatabaseError,
+      lastFailedQuery: global.lastDatabaseQuery
+    });
+  } catch (err) {
+    res.json({
+      verificationStage: 'Error fetching logs',
+      databaseStatus: 'Error',
+      lastVerificationError: err.message,
+      lastFailedQuery: null
+    });
+  }
 });
 
 module.exports = router;

@@ -46,3 +46,19 @@ CREATE TABLE task_activity (
   CONSTRAINT unique_user_task UNIQUE (user_id, task_id)
 );
 
+-- Verification Audit Logs Table
+CREATE TABLE verification_audit_logs (
+  id SERIAL PRIMARY KEY,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+  student_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  student_name VARCHAR(255),
+  youtube_handle VARCHAR(255),
+  platform VARCHAR(50),
+  video_id VARCHAR(50),
+  source VARCHAR(50),
+  comments_found INTEGER,
+  match_found BOOLEAN,
+  status VARCHAR(255),
+  reason TEXT
+);

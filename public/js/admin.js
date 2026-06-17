@@ -60,8 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
             nav: document.getElementById('nav-verification-logs'),
             mobNav: document.getElementById('mobile-nav-verification-logs'),
             section: document.getElementById('view-verification-logs-section'),
-            title: 'Verification Debug Logs',
-            subtitle: 'Detailed diagnostics for YouTube comment verification attempts.'
+            title: 'Verification Audit Logs',
+            subtitle: 'Permanent audit records of comment verification attempts.'
         },
         settings: {
             nav: document.getElementById('nav-settings'),
@@ -1056,7 +1056,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Utility: Prevent HTML injection XSS
     function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, 
+        if (str === null || str === undefined || str === '') return '-';
+        return String(str).replace(/[&<>'"]/g, 
             tag => ({
                 '&': '&amp;',
                 '<': '&lt;',

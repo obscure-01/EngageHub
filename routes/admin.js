@@ -415,11 +415,24 @@ router.get('/students/:id/tasks', async (req, res) => {
   }
 });
 // 10. Admin Debug View - Get verification logs
-router.get('/verification-logs', (req, res) => {
+router.get('/verification-logs', async (req, res) => {
   try {
-    const logs = global.verificationDiagnostics || [];
-    // Return newest first
-    res.json([...logs].reverse());
+    const result = await db.query('SELECT * FROM verification_audit_logs ORDER BY timestamp DESC LIMIT 5000');
+    const logs = result.rows.map(row => ({
+      timestamp: row.timestamp,
+      taskId: row.task_id,
+      studentId: row.student_id,
+      studentName: row.student_name,
+      storedHandle: row.youtube_handle,
+      platform: row.platform,
+      videoId: row.video_id,
+      verificationSource: row.source,
+      numComments: row.comments_found,
+      matchResult: row.match_found,
+      status: row.status,
+      reason: row.reason
+    }));
+    res.json(logs);
   } catch (error) {
     console.error('Error fetching verification logs:', error);
     res.status(500).json({ error: 'Failed to retrieve verification logs.' });
