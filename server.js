@@ -3,6 +3,13 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// In-memory storage for verification diagnostics
+global.verificationDiagnostics = [];
+global.youtubeApiStatus = {
+  status: process.env.YOUTUBE_API_KEY ? 'Configured' : 'Missing API Key',
+  lastAttempt: null,
+  lastResponseStatus: null
+};
 const authRouter = require('./routes/auth');
 const adminRouter = require('./routes/admin');
 const studentRouter = require('./routes/student');
@@ -33,15 +40,90 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
 });
 
+app.get('/api/system/youtube-status', (req, res) => {
+  res.json({
+    envKeyPresent: !!process.env.YOUTUBE_API_KEY,
+    verificationMode: process.env.YOUTUBE_API_KEY ? "REAL_API" : "MOCK",
+    startupDetectedKey: global.youtubeApiStatus.status === 'Configured'
+  });
+});
+
 // Fallback to landing page for undefined routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`=========================================`);
-  console.log(` EngageHub MVP Server started on port ${PORT}`);
-  console.log(` Local link: http://localhost:${PORT}`);
-  console.log(`=========================================`);
+// Start Server after database check
+const { pool } = require('./db');
+const fs = require('fs');
+
+async function checkAndInitializeDatabase() {
+  try {
+    // Check if the users table exists in public schema
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+          AND table_name = 'users'
+      );
+    `);
+    
+    let isEmpty = !tableCheck.rows[0].exists;
+    
+    if (!isEmpty) {
+      const countCheck = await pool.query('SELECT COUNT(*)::int FROM users');
+      if (countCheck.rows[0].count === 0) {
+        isEmpty = true;
+      }
+    }
+
+    if (isEmpty) {
+      console.log('Database is empty. Initializing schema and seed data...');
+      
+      // Read and run schema.sql
+      const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+      await pool.query(schemaSql);
+      console.log('Database tables initialized.');
+
+      // Read and run seed.sql
+      const seedSql = fs.readFileSync(path.join(__dirname, 'seed.sql'), 'utf8');
+      await pool.query(seedSql);
+      console.log('Sample data seeded successfully.');
+    } else {
+      console.log('Database already initialized. Connecting and loading records...');
+    }
+
+    // Ensure the CHECK constraint is updated to support the new comment status values
+    console.log('Ensuring database constraints are up-to-date...');
+    await pool.query(`
+      ALTER TABLE task_activity DROP CONSTRAINT IF EXISTS task_activity_comment_status_check;
+      ALTER TABLE task_activity ADD CONSTRAINT task_activity_comment_status_check CHECK (
+        comment_status IN ('Not Checked', 'Comment Verified', 'Comment Not Found', 'YouTube Account Not Available', 'Verification Error', 'Not Attempted', 'Comment Detected', 'Comment Not Verified', 'Platform Not Available', 'Invalid URL', 'Video ID Extraction Failed', 'Video Not Found', 'Handle Mismatch', 'Verification Successful', 'Student Handle Missing', 'Comments Not Accessible', 'No Comments Retrieved', 'Configuration Error', 'Comments Disabled', 'API Quota Exceeded', 'API Not Enabled', 'API Key Invalid', 'Network Error', 'No Comments Available')
+      );
+    `);
+    console.log('Database constraints verified.');
+  } catch (error) {
+    console.error('Error during database startup initialization check:', error);
+  }
+}
+
+checkAndInitializeDatabase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`=========================================`);
+    console.log(` EngageHub MVP Server started on port ${PORT}`);
+    console.log(` Local link: http://localhost:${PORT}`);
+    
+    console.log(`\\n[STARTUP DIAGNOSTIC]`);
+    console.log(`YOUTUBE_API_KEY Present: ${!!process.env.YOUTUBE_API_KEY ? 'TRUE' : 'FALSE'}`);
+    
+    // Validate YouTube API Key configuration
+    if (process.env.YOUTUBE_API_KEY) {
+      console.log(` YouTube API Status: Configured`);
+    } else {
+      console.log(` YouTube API Status: Missing API Key`);
+      console.warn(` [WARNING] YouTube Comment Verification will fail with Configuration Error.`);
+    }
+    
+    console.log(`=========================================`);
+  });
 });

@@ -188,16 +188,36 @@ router.get('/analytics', async (req, res) => {
 
     // 4. Total Verified Comments
     const totalVerifiedResult = await db.query(
-      "SELECT COUNT(*)::int FROM task_activity WHERE comment_status = 'Comment Detected'"
+      "SELECT COUNT(*)::int FROM task_activity WHERE comment_status IN ('Comment Detected', 'Comment Verified', 'Verification Successful')"
     );
     const totalVerifiedComments = totalVerifiedResult.rows[0].count;
+
+    // 4b. YouTube Verified Comments
+    const ytVerifiedResult = await db.query(`
+      SELECT COUNT(*)::int FROM task_activity ta 
+      JOIN tasks t ON ta.task_id = t.id 
+      WHERE t.platform = 'YouTube' AND ta.comment_status IN ('Comment Verified', 'Comment Detected', 'Verification Successful')
+    `);
+    const verifiedYouTubeComments = ytVerifiedResult.rows[0].count;
+
+    // 4c. Total Comment Points Awarded
+    const totalPointsResult = await db.query(
+      "SELECT COALESCE(SUM(comment_points_awarded), 0)::int FROM task_activity"
+    );
+    const totalCommentPointsAwarded = totalPointsResult.rows[0].coalesce;
+
+    // 4d. Students with Verified Comments
+    const studentsWithCommentsResult = await db.query(
+      "SELECT COUNT(DISTINCT user_id)::int FROM task_activity WHERE comment_status IN ('Comment Verified', 'Comment Detected', 'Verification Successful')"
+    );
+    const studentsWithVerifiedComments = studentsWithCommentsResult.rows[0].count;
 
     // 5. Comments Per Platform
     const platformBreakdownResult = await db.query(`
       SELECT t.platform, COUNT(ta.id)::int as count
       FROM tasks t
       JOIN task_activity ta ON ta.task_id = t.id
-      WHERE ta.comment_status = 'Comment Detected'
+      WHERE ta.comment_status IN ('Comment Detected', 'Comment Verified', 'Verification Successful')
       GROUP BY t.platform
     `);
     
@@ -215,7 +235,7 @@ router.get('/analytics', async (req, res) => {
 
     // 6. Top Commenters
     const topCommentersResult = await db.query(`
-      SELECT u.id, u.name, u.email, COALESCE(SUM(CASE WHEN ta.comment_status = 'Comment Detected' THEN 1 ELSE 0 END), 0)::int as verified_comments_count
+      SELECT u.id, u.name, u.email, COALESCE(SUM(CASE WHEN ta.comment_status IN ('Comment Detected', 'Comment Verified', 'Verification Successful') THEN 1 ELSE 0 END), 0)::int as verified_comments_count
       FROM users u
       LEFT JOIN task_activity ta ON ta.user_id = u.id
       WHERE u.role = 'Student'
@@ -231,7 +251,10 @@ router.get('/analytics', async (req, res) => {
         completedTasks,
         pendingTasks,
         engagementRate: `${engagementRate}%`,
-        totalVerifiedComments
+        totalVerifiedComments,
+        verifiedYouTubeComments,
+        totalCommentPointsAwarded,
+        studentsWithVerifiedComments
       },
       commentsPerPlatform,
       topCommenters: topCommentersResult.rows,
@@ -334,6 +357,8 @@ router.get('/tracking', async (req, res) => {
         ta.opened_at,
         ta.completed_at,
         COALESCE(ta.comment_status, 'Not Attempted') as comment_status,
+        ta.comment_verified_at,
+        COALESCE(ta.comment_points_awarded, 0) as comment_points_awarded,
         (CASE WHEN ta.status = 'COMPLETED' THEN 10 ELSE 0 END + COALESCE(ta.comment_points_awarded, 0)) as points_earned
       FROM users u
       CROSS JOIN tasks t
@@ -387,6 +412,32 @@ router.get('/students/:id/tasks', async (req, res) => {
   } catch (error) {
     console.error('Error fetching student progress:', error);
     res.status(500).json({ error: 'Failed to retrieve student progress details.' });
+  }
+});
+// 10. Admin Debug View - Get verification logs
+router.get('/verification-logs', (req, res) => {
+  try {
+    const logs = global.verificationDiagnostics || [];
+    // Return newest first
+    res.json([...logs].reverse());
+  } catch (error) {
+    console.error('Error fetching verification logs:', error);
+    res.status(500).json({ error: 'Failed to retrieve verification logs.' });
+  }
+});
+
+// 11. Admin Settings - YouTube API
+router.get('/settings/youtube', (req, res) => {
+  try {
+    const status = global.youtubeApiStatus || {
+      status: process.env.YOUTUBE_API_KEY ? 'Configured' : 'Missing API Key',
+      lastAttempt: null,
+      lastResponseStatus: null
+    };
+    res.json(status);
+  } catch (error) {
+    console.error('Error fetching YouTube API settings:', error);
+    res.status(500).json({ error: 'Failed to retrieve settings.' });
   }
 });
 

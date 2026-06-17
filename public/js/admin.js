@@ -55,6 +55,20 @@ document.addEventListener('DOMContentLoaded', () => {
             section: document.getElementById('view-leaderboard-section'),
             title: 'Leaderboard Rankings',
             subtitle: 'Rankings of students sorted by total points accumulated.'
+        },
+        verificationLogs: {
+            nav: document.getElementById('nav-verification-logs'),
+            mobNav: document.getElementById('mobile-nav-verification-logs'),
+            section: document.getElementById('view-verification-logs-section'),
+            title: 'Verification Debug Logs',
+            subtitle: 'Detailed diagnostics for YouTube comment verification attempts.'
+        },
+        settings: {
+            nav: document.getElementById('nav-settings'),
+            mobNav: document.getElementById('mobile-nav-settings'),
+            section: document.getElementById('view-settings-section'),
+            title: 'System Settings',
+            subtitle: 'Configure external integrations and administrative preferences.'
         }
     };
 
@@ -114,6 +128,10 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchTrackingData();
         } else if (viewKey === 'leaderboard') {
             fetchLeaderboard();
+        } else if (viewKey === 'verificationLogs') {
+            fetchVerificationLogs();
+        } else if (viewKey === 'settings') {
+            fetchSettings();
         }
         
         // Close mobile sidebar if open
@@ -462,6 +480,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('analytics-kpi-comments-youtube').textContent = data.commentsPerPlatform.YouTube.toLocaleString();
                 document.getElementById('analytics-kpi-comments-linkedin').textContent = data.commentsPerPlatform.LinkedIn.toLocaleString();
                 document.getElementById('analytics-kpi-comments-facebook').textContent = data.commentsPerPlatform.Facebook.toLocaleString();
+                
+                // New YouTube comment verification fields
+                if (document.getElementById('analytics-kpi-comments-verified-youtube')) {
+                    document.getElementById('analytics-kpi-comments-verified-youtube').textContent = data.overview.verifiedYouTubeComments.toLocaleString();
+                    document.getElementById('analytics-kpi-comment-points-awarded').textContent = data.overview.totalCommentPointsAwarded.toLocaleString();
+                    document.getElementById('analytics-kpi-students-verified-comments').textContent = data.overview.studentsWithVerifiedComments.toLocaleString();
+                }
             }
 
             // Fill Task Breakdown Table
@@ -708,6 +733,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Render table
             renderTrackingTable();
+            
+            // Render YouTube verifications
+            renderYouTubeVerificationsTable();
         } catch (error) {
             listContainer.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-error">Failed to load tracking data.</td></tr>';
         }
@@ -764,11 +792,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let commentBadgeClass = 'bg-surface-container-high text-secondary';
             const commentStatus = record.comment_status || 'Not Attempted';
-            if (commentStatus === 'Comment Detected') {
+            if (commentStatus === 'Comment Detected' || commentStatus === 'Comment Verified' || commentStatus === 'Verification Successful') {
                 commentBadgeClass = 'bg-tertiary-container text-on-tertiary-container border border-tertiary-fixed';
-            } else if (commentStatus === 'Comment Not Verified') {
+            } else if (commentStatus === 'Comment Not Verified' || commentStatus === 'Comment Not Found' || commentStatus === 'Invalid URL' || commentStatus === 'Video ID Extraction Failed' || commentStatus === 'Video Not Found' || commentStatus === 'Handle Mismatch' || commentStatus === 'Verification Error') {
                 commentBadgeClass = 'bg-error-container text-on-error-container border border-[#fbdfe1]';
-            } else if (commentStatus === 'Platform Not Available') {
+            } else if (commentStatus === 'Platform Not Available' || commentStatus === 'YouTube Account Not Available') {
                 commentBadgeClass = 'bg-secondary-container text-on-secondary-container border border-outline-variant';
             }
 
@@ -793,10 +821,155 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
+    function renderYouTubeVerificationsTable() {
+        const ytListContainer = document.getElementById('youtube-verifications-list');
+        if (!ytListContainer) return;
+        
+        // Filter for YouTube tasks that are completed (or have checked comment status)
+        const youtubeCompleted = allTrackingRecords.filter(record => 
+            record.platform === 'YouTube' && 
+            (record.status === 'COMPLETED' || (record.comment_status && record.comment_status !== 'Not Checked' && record.comment_status !== 'Not Attempted'))
+        );
+
+        if (youtubeCompleted.length === 0) {
+            ytListContainer.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-on-surface-variant">No completed YouTube tasks found.</td></tr>';
+            return;
+        }
+
+        ytListContainer.innerHTML = youtubeCompleted.map(record => {
+            let commentBadgeClass = 'bg-surface-container-high text-secondary';
+            const commentStatus = record.comment_status || 'Not Checked';
+            
+            if (commentStatus === 'Comment Verified' || commentStatus === 'Verification Successful') {
+                commentBadgeClass = 'bg-tertiary-container text-on-tertiary-container border border-tertiary-fixed';
+            } else if (commentStatus === 'Comment Not Found' || commentStatus === 'Invalid URL' || commentStatus === 'Video ID Extraction Failed' || commentStatus === 'Video Not Found' || commentStatus === 'Handle Mismatch') {
+                commentBadgeClass = 'bg-error-container text-on-error-container border border-[#fbdfe1]';
+            } else if (commentStatus === 'YouTube Account Not Available') {
+                commentBadgeClass = 'bg-secondary-container text-on-secondary-container border border-outline-variant';
+            } else if (commentStatus === 'Verification Error') {
+                commentBadgeClass = 'bg-error-container text-on-error-container border border-error/20';
+            } else if (commentStatus === 'Not Checked') {
+                commentBadgeClass = 'bg-surface-container-high text-secondary';
+            }
+
+            const verifiedDate = record.comment_verified_at 
+                ? new Date(record.comment_verified_at).toLocaleString() 
+                : 'N/A';
+
+            return `
+                <tr class="hover:bg-surface-container-low/50 transition-colors">
+                    <td class="px-6 py-4 font-semibold text-on-surface">${escapeHTML(record.student_name)}</td>
+                    <td class="px-6 py-4 text-on-surface-variant">${escapeHTML(record.task_title)}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold ${commentBadgeClass}">
+                            ${commentStatus}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-secondary text-xs">${verifiedDate}</td>
+                    <td class="px-6 py-4 text-right font-bold text-primary">${record.comment_points_awarded || 0} pts</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
     // Attach filter listeners
     document.getElementById('filter-student').addEventListener('change', renderTrackingTable);
     document.getElementById('filter-task').addEventListener('change', renderTrackingTable);
     document.getElementById('filter-status').addEventListener('change', renderTrackingTable);
+
+    // 9. Debug Logs Page
+    async function fetchVerificationLogs() {
+        const listContainer = document.getElementById('verification-logs-list');
+        listContainer.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-sm text-on-surface-variant">Loading verification logs...</td></tr>';
+        try {
+            const logs = await apiRequest('/api/admin/verification-logs');
+            if (!logs || logs.length === 0) {
+                listContainer.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-sm text-on-surface-variant">No verification attempts logged yet.</td></tr>';
+                return;
+            }
+            listContainer.innerHTML = logs.map(log => {
+                const date = new Date(log.timestamp).toLocaleString();
+                let statusBadge = 'bg-surface-container-high text-secondary';
+                if (log.status === 'Comment Verified') {
+                    statusBadge = 'bg-tertiary-container text-on-tertiary-container border border-tertiary-fixed';
+                } else if (log.status !== 'Pending') {
+                    statusBadge = 'bg-error-container text-on-error-container border border-[#fbdfe1]';
+                }
+                
+                const matchIcon = log.matchResult ? '<span class="material-symbols-outlined text-tertiary text-[18px]">check_circle</span>' : '<span class="material-symbols-outlined text-error text-[18px]">cancel</span>';
+                const foundText = log.numComments !== undefined ? log.numComments : '-';
+
+                const sourceBadge = log.verificationSource === 'REAL_YOUTUBE_API' 
+                    ? '<span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary-container text-on-primary-container">REAL_YOUTUBE_API</span>' 
+                    : '<span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-error-container text-on-error-container">' + (log.verificationSource || 'UNKNOWN') + '</span>';
+
+                return `
+                    <tr class="hover:bg-surface-container-low/50 transition-colors">
+                        <td class="px-4 py-3 text-xs text-secondary whitespace-nowrap">${date}</td>
+                        <td class="px-4 py-3">${sourceBadge}</td>
+                        <td class="px-4 py-3 text-xs text-on-surface-variant max-w-[150px] truncate" title="${escapeHTML(log.taskUrl)}">#${log.taskId}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <div class="font-semibold text-on-surface">${escapeHTML(log.studentName)}</div>
+                            <div class="text-xs text-secondary">${escapeHTML(log.storedHandle || 'None')}</div>
+                        </td>
+                        <td class="px-4 py-3 text-xs font-mono text-secondary">${escapeHTML(log.videoId || '-')}</td>
+                        <td class="px-4 py-3 text-center text-sm font-semibold">${foundText}</td>
+                        <td class="px-4 py-3 text-center">${matchIcon}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold ${statusBadge}">${log.status}</span>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-on-surface-variant max-w-xs truncate" title="${escapeHTML(log.reason)}">${escapeHTML(log.reason)}</td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            listContainer.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-sm text-error">Failed to fetch verification logs.</td></tr>';
+        }
+    }
+
+    const btnRefreshLogs = document.getElementById('btn-refresh-logs');
+    if (btnRefreshLogs) {
+        btnRefreshLogs.addEventListener('click', fetchVerificationLogs);
+    }
+
+    // 10. Settings View
+    async function fetchSettings() {
+        const elStatus = document.getElementById('setting-youtube-status');
+        const elIcon = document.getElementById('setting-youtube-status-icon');
+        const elAttempt = document.getElementById('setting-youtube-last-attempt');
+        const elResponse = document.getElementById('setting-youtube-last-response');
+
+        elStatus.textContent = 'Loading...';
+        
+        try {
+            const settings = await apiRequest('/api/admin/settings/youtube');
+            
+            elStatus.textContent = settings.status;
+            if (settings.status === 'Configured') {
+                elIcon.textContent = 'check_circle';
+                elIcon.className = 'material-symbols-outlined text-xl text-tertiary';
+                elStatus.className = 'text-base font-bold text-tertiary';
+            } else {
+                elIcon.textContent = 'error';
+                elIcon.className = 'material-symbols-outlined text-xl text-error';
+                elStatus.className = 'text-base font-bold text-error';
+            }
+
+            elAttempt.textContent = settings.lastAttempt ? new Date(settings.lastAttempt).toLocaleString() : 'Never';
+            elResponse.textContent = settings.lastResponseStatus || '--';
+            
+            if (settings.lastResponseStatus && settings.lastResponseStatus !== 200) {
+                elResponse.classList.add('text-error');
+            } else {
+                elResponse.classList.remove('text-error');
+            }
+
+        } catch (error) {
+            elStatus.textContent = 'Error loading settings';
+            elIcon.textContent = 'error';
+            elIcon.className = 'material-symbols-outlined text-xl text-error';
+        }
+    }
 
     // ──────────────────────────────────────────────────────────
     // FORM SUBMISSIONS

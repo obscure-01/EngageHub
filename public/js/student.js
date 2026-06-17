@@ -317,22 +317,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const totalPoints = 10 + (task.comment_points_awarded || 0);
 
                 let commentStatusBadge = '';
-                const commentStatus = task.comment_status || 'Not Attempted';
-                if (commentStatus === 'Comment Detected') {
-                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container text-on-tertiary-container border border-tertiary-fixed">Comment Detected (+5 pts)</span>`;
-                } else if (commentStatus === 'Comment Not Verified') {
-                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">Comment Not Verified</span>`;
-                } else if (commentStatus === 'Platform Not Available') {
-                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary-container text-on-secondary-container border border-outline-variant">Platform Not Available</span>`;
+                const commentStatus = task.comment_status || (task.platform === 'YouTube' ? 'Not Checked' : 'Not Attempted');
+                if (commentStatus === 'Comment Detected' || commentStatus === 'Comment Verified' || commentStatus === 'Verification Successful') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container text-on-tertiary-container border border-tertiary-fixed">Comment Verified (+5 pts)</span>`;
+                } else if (commentStatus === 'Comment Not Verified' || commentStatus === 'Comment Not Found') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">Comment Not Found</span>`;
+                } else if (commentStatus === 'Platform Not Available' || commentStatus === 'YouTube Account Not Available') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary-container text-on-secondary-container border border-outline-variant">YouTube Account Not Available</span>`;
+                } else if (commentStatus === 'Invalid URL') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">Invalid URL</span>`;
+                } else if (commentStatus === 'Video ID Extraction Failed') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">ID Extraction Failed</span>`;
+                } else if (commentStatus === 'Video Not Found') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">Video Not Found</span>`;
+                } else if (commentStatus === 'Handle Mismatch') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">Handle Mismatch</span>`;
+                } else if (commentStatus === 'Verification Error') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">Verification Error</span>`;
                 } else {
-                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-container-high text-on-surface-variant">Comment Not Attempted</span>`;
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-container-high text-on-surface-variant">${task.platform === 'YouTube' ? 'Not Checked' : 'Comment Not Attempted'}</span>`;
                 }
 
-                // Verify comment button (only if not already successfully detected)
-                const showVerifyBtn = commentStatus !== 'Comment Detected';
+                // Verify comment button (only if not already successfully verified/detected)
+                const isVerified = commentStatus === 'Comment Detected' || commentStatus === 'Comment Verified' || commentStatus === 'Verification Successful';
+                const showVerifyBtn = !isVerified;
+                const buttonText = task.platform === 'YouTube' ? 'Check For Comment' : 'Verify Comment';
                 const verifyBtnHTML = showVerifyBtn
                     ? `<button onclick="verifyComment(${task.id})" class="bg-primary text-on-primary hover:bg-on-primary-fixed-variant px-3 py-1.5 font-semibold text-xs transition-colors rounded-DEFAULT shrink-0">
-                           Verify Comment
+                           ${buttonText}
                        </button>`
                     : '';
 
@@ -373,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await apiRequest(`/api/student/tasks/${taskId}/verify-comment`, { method: 'POST' });
             
             // Check if comment was successfully verified (detected)
-            const isError = data.comment_status !== 'Comment Detected';
+            const isError = data.comment_status !== 'Comment Detected' && data.comment_status !== 'Comment Verified' && data.comment_status !== 'Verification Successful';
             showAlert(data.message, isError);
             
             // Refresh lists and stats

@@ -40,7 +40,7 @@ CREATE TABLE task_activity (
   opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMP NULL,
   time_spent INTEGER DEFAULT 0,
-  comment_status VARCHAR(50) NOT NULL DEFAULT 'Not Attempted' CHECK (comment_status IN ('Not Attempted', 'Comment Detected', 'Comment Not Verified', 'Platform Not Available')),
+  comment_status VARCHAR(50) NOT NULL DEFAULT 'Not Attempted' CHECK (comment_status IN ('Not Checked', 'Comment Verified', 'Comment Not Found', 'YouTube Account Not Available', 'Verification Error', 'Not Attempted', 'Comment Detected', 'Comment Not Verified', 'Platform Not Available', 'Invalid URL', 'Video ID Extraction Failed', 'Video Not Found', 'Handle Mismatch', 'Verification Successful')),
   comment_verified_at TIMESTAMP DEFAULT NULL,
   comment_points_awarded INTEGER DEFAULT 0,
   CONSTRAINT unique_user_task UNIQUE (user_id, task_id)

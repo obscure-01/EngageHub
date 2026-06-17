@@ -144,7 +144,7 @@ router.post('/tasks/:id/complete', async (req, res) => {
 
   try {
     // Check if task exists and has not expired
-    const taskCheck = await db.query('SELECT expiry_date FROM tasks WHERE id = $1', [taskId]);
+    const taskCheck = await db.query('SELECT expiry_date, platform FROM tasks WHERE id = $1', [taskId]);
     if (taskCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Task not found.' });
     }
@@ -192,12 +192,17 @@ router.post('/tasks/:id/complete', async (req, res) => {
 
     // Update activity status to COMPLETED
     const timeSpent = Math.round(elapsedSeconds);
-    const updateActivityQuery = `
-      UPDATE task_activity
-      SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP, time_spent = $3
-      WHERE user_id = $1 AND task_id = $2
-      RETURNING *
-    `;
+    const platform = taskCheck.rows[0].platform;
+    const isYouTube = platform === 'YouTube';
+    const updateActivityQuery = isYouTube
+      ? `UPDATE task_activity
+         SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP, time_spent = $3, comment_status = 'Not Checked'
+         WHERE user_id = $1 AND task_id = $2
+         RETURNING *`
+      : `UPDATE task_activity
+         SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP, time_spent = $3
+         WHERE user_id = $1 AND task_id = $2
+         RETURNING *`;
     const updatedActivity = await db.query(updateActivityQuery, [userId, taskId, timeSpent]);
 
     await db.query('COMMIT');
@@ -315,6 +320,160 @@ router.put('/profile/social', async (req, res) => {
   }
 });
 
+function getYouTubeVideoId(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+    const pathname = parsed.pathname;
+
+    if (hostname === 'youtu.be') {
+      const id = pathname.substring(1).split(/[?#]/)[0];
+      return id.length === 11 ? id : null;
+    }
+
+    if (hostname.includes('youtube.com')) {
+      if (pathname.startsWith('/shorts/') || pathname.startsWith('/embed/')) {
+        const parts = pathname.split('/');
+        const id = parts[2]?.split(/[?#]/)[0];
+        return (id && id.length === 11) ? id : null;
+      }
+      if (pathname === '/watch') {
+        const id = parsed.searchParams.get('v');
+        return (id && id.length === 11) ? id : null;
+      }
+    }
+    
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[2] && match[2].length === 11) {
+      return match[2];
+    }
+  } catch (e) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[2] && match[2].length === 11) {
+      return match[2];
+    }
+  }
+  return null;
+}
+
+function matchYouTubeHandle(authorName, userHandle) {
+  if (!authorName || !userHandle) return { isMatch: false, cleanA: '', cleanB: '' };
+
+  const clean = (s) => s.toLowerCase().replace(/@/g, '').replace(/\s+/g, '');
+  
+  const cleanA = clean(authorName);
+  const cleanB = clean(userHandle);
+
+  let isMatch = false;
+
+  if (cleanA === cleanB) {
+    isMatch = true;
+  } else {
+    const stripSpecial = (s) => s.replace(/[^a-z0-9]/g, '');
+    if (stripSpecial(cleanA) === stripSpecial(cleanB)) {
+      isMatch = true;
+    } else {
+      const hasSuffixMatch = (str, base) => {
+        const regex = new RegExp('^' + base + '[-_][a-z0-9]*[0-9][a-z0-9]*$');
+        return regex.test(str);
+      };
+
+      const hasStrippedSuffixMatch = (str, base) => {
+        const strippedStr = stripSpecial(str);
+        const strippedBase = stripSpecial(base);
+        if (strippedStr.startsWith(strippedBase)) {
+          const suffix = strippedStr.substring(strippedBase.length);
+          const hasDigit = /[0-9]/.test(suffix);
+          const suffixRegex = new RegExp('[-_]' + suffix + '$');
+          return hasDigit && suffixRegex.test(str) && suffix.length >= 2 && suffix.length <= 7;
+        }
+        return false;
+      };
+
+      isMatch = hasSuffixMatch(cleanA, cleanB) || hasSuffixMatch(cleanB, cleanA) ||
+                hasStrippedSuffixMatch(cleanA, cleanB) || hasStrippedSuffixMatch(cleanB, cleanA);
+    }
+  }
+
+  return { isMatch, cleanA, cleanB };
+}
+
+async function fetchYouTubeComments(videoId, apiKey) {
+  const url = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=100&key=${apiKey}`;
+  
+  console.log(`\n[YOUTUBE API REQUEST]`);
+  console.log(`Video ID: ${videoId}`);
+  console.log(`Endpoint: https://www.googleapis.com/youtube/v3/commentThreads`);
+  console.log(`Query Parameters: part=snippet, videoId=${videoId}, maxResults=100, key=***`);
+
+  let response;
+  try {
+    response = await fetch(url);
+  } catch (netErr) {
+    console.error(`[YOUTUBE API ERROR] Network Error:`, netErr.message);
+    const err = new Error(`Network Error: ${netErr.message}`);
+    err.apiStatus = 'NETWORK_ERROR';
+    err.reason = 'Network Error';
+    throw err;
+  }
+  
+  if (global.youtubeApiStatus) {
+    global.youtubeApiStatus.lastAttempt = new Date();
+    global.youtubeApiStatus.lastResponseStatus = response.status;
+  }
+  
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error(`\n[YOUTUBE API RESPONSE ERROR]`);
+    console.error(`HTTP Status: ${response.status}`);
+    const errorCode = data.error?.code || 'UNKNOWN_CODE';
+    const errorMessage = data.error?.message || 'Unknown error message';
+    const reason = data.error?.errors?.[0]?.reason || 'unknown_reason';
+    
+    console.error(`Error Code: ${errorCode}`);
+    console.error(`Error Message: ${errorMessage}`);
+    console.error(`Reason: ${reason}`);
+    console.error(`Full Body:`, JSON.stringify(data, null, 2));
+
+    const err = new Error(errorMessage);
+    err.apiStatus = response.status;
+    err.errorCode = errorCode;
+    err.reason = reason;
+    throw err;
+  }
+
+  console.log(`\n[YOUTUBE API SUCCESS]`);
+  console.log(`HTTP Status: ${response.status}`);
+  const items = data.items || [];
+  console.log(`Comments Retrieved Count: ${items.length}`);
+  
+  return items.map(item => ({
+    author: item.snippet?.topLevelComment?.snippet?.authorDisplayName || 'Unknown',
+    content: item.snippet?.topLevelComment?.snippet?.textDisplay || ''
+  }));
+}
+
+// Diagnostic helper
+function logDiagnostic(data) {
+  // In-memory storage for verification diagnostics
+  if (!global.verificationDiagnostics) {
+    global.verificationDiagnostics = [];
+    global.lastDatabaseError = null;
+    global.lastDatabaseQuery = null;
+  }
+  global.verificationDiagnostics.unshift({
+    timestamp: new Date().toISOString(),
+    ...data
+  });
+  if (global.verificationDiagnostics.length > 100) {
+    global.verificationDiagnostics.pop();
+  }
+}
+
 // Verify Task Comment
 router.post('/tasks/:id/verify-comment', async (req, res) => {
   const userId = req.user.id;
@@ -334,20 +493,21 @@ router.post('/tasks/:id/verify-comment', async (req, res) => {
     const activity = activityResult.rows[0];
 
     // 2. Check if already verified
-    if (activity.comment_status === 'Comment Detected' || activity.comment_points_awarded > 0) {
+    if (['Comment Detected', 'Comment Verified', 'Verification Successful'].includes(activity.comment_status) || activity.comment_points_awarded > 0) {
       return res.status(400).json({ error: 'Comment points already awarded for this task.' });
     }
 
     // 3. Fetch the platform of the task
-    const taskResult = await db.query('SELECT platform FROM tasks WHERE id = $1', [taskId]);
+    const taskResult = await db.query('SELECT platform, social_link FROM tasks WHERE id = $1', [taskId]);
     if (taskResult.rows.length === 0) {
       return res.status(404).json({ error: 'Task not found.' });
     }
     const platform = taskResult.rows[0].platform;
+    const socialLink = taskResult.rows[0].social_link;
 
     // 4. Fetch user details to get the relevant handle
     const userResult = await db.query(
-      'SELECT instagram_username, youtube_handle, linkedin_profile, facebook_profile FROM users WHERE id = $1',
+      'SELECT name, instagram_username, youtube_handle, linkedin_profile, facebook_profile FROM users WHERE id = $1',
       [userId]
     );
     if (userResult.rows.length === 0) {
@@ -362,12 +522,33 @@ router.post('/tasks/:id/verify-comment', async (req, res) => {
     else if (platform === 'LinkedIn') handle = user.linkedin_profile;
     else if (platform === 'Facebook') handle = user.facebook_profile;
 
+    const diagBase = {
+      taskId: taskId,
+      taskUrl: socialLink,
+      videoId: null,
+      studentId: userId,
+      studentName: user.name,
+      storedHandle: handle,
+      numComments: 0,
+      authorsRetrieved: 'None',
+      matchResult: false,
+      status: 'Pending',
+      reason: ''
+    };
+
     // 5. If handle is not available
-    if (!handle || handle.trim() === '') {
-      await db.query(
-        "UPDATE task_activity SET comment_status = 'Platform Not Available' WHERE user_id = $1 AND task_id = $2",
-        [userId, taskId]
-      );
+    if (platform === 'YouTube' && (!user.youtube_handle || user.youtube_handle.trim() === '')) {
+      const status = 'YouTube Account Not Available';
+      await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+      logDiagnostic({ ...diagBase, status: status, reason: 'No YouTube handle set in profile' });
+      return res.json({
+        message: 'Please add your YouTube handle in Profile Settings before using comment verification.',
+        comment_status: status
+      });
+    }
+
+    if (platform !== 'YouTube' && (!handle || handle.trim() === '')) {
+      await db.query("UPDATE task_activity SET comment_status = 'Platform Not Available' WHERE user_id = $1 AND task_id = $2", [userId, taskId]);
       return res.json({
         message: `Your ${platform} handle/profile is not configured. Please add it in Profile settings.`,
         comment_status: 'Platform Not Available'
@@ -375,42 +556,210 @@ router.post('/tasks/:id/verify-comment', async (req, res) => {
     }
 
     // 6. Platform verification logic
-    if (platform === 'Instagram' || platform === 'YouTube') {
-      // Mock automatic verification succeeds since handle is configured
-      await db.query('BEGIN');
-      
-      // Award 5 points
-      await db.query('UPDATE users SET points = points + 5 WHERE id = $1', [userId]);
+    if (platform === 'YouTube') {
+      if (!socialLink || socialLink.trim() === '') {
+        const status = 'Video ID Extraction Failed';
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        logDiagnostic({ ...diagBase, status: status, reason: 'Task URL is empty or invalid' });
+        return res.json({ message: 'Verification Error: Invalid URL.', comment_status: status });
+      }
 
-      // Update activity
+      const videoId = getYouTubeVideoId(socialLink);
+      if (!videoId) {
+        const status = 'Video ID Extraction Failed';
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        logDiagnostic({ ...diagBase, status: status, reason: 'Regex could not find 11-char video ID' });
+        return res.json({ message: 'Failed to extract a valid YouTube video ID from the task link.', comment_status: status });
+      }
+      diagBase.videoId = videoId;
+
+      console.log(`\n[DIAGNOSTIC] process.env.YOUTUBE_API_KEY exists: ${!!process.env.YOUTUBE_API_KEY ? 'TRUE' : 'FALSE'}\n`);
+
+      const apiKey = process.env.YOUTUBE_API_KEY;
+      let comments = [];
+      let fetchError = null;
+      let verificationSource = 'REAL_YOUTUBE_API';
+
+      if (!apiKey) {
+        verificationSource = 'CONFIGURATION_ERROR';
+        const status = 'Configuration Error';
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        logDiagnostic({ ...diagBase, verificationSource, status: status, reason: 'YouTube API Key is missing from configuration' });
+        return res.json({
+          message: 'YouTube Comment Verification is not configured. Missing YOUTUBE_API_KEY.',
+          comment_status: status
+        });
+      }
+
+      try {
+        comments = await fetchYouTubeComments(videoId, apiKey);
+      } catch (apiError) {
+        console.error('YouTube verification API error:', apiError.message);
+        fetchError = apiError;
+      }
+
+      if (fetchError) {
+        let status = 'Comments Not Accessible';
+        let userMessage = 'Unable to retrieve comments for this video.';
+        
+        if (fetchError.apiStatus === 403) {
+           if (fetchError.reason === 'commentsDisabled') {
+             status = 'Comments Disabled';
+             userMessage = 'Comments are disabled for this video.';
+           } else if (fetchError.reason === 'quotaExceeded') {
+             status = 'API Quota Exceeded';
+             userMessage = 'YouTube API quota has been exceeded.';
+           } else if (fetchError.reason === 'accessNotConfigured') {
+             status = 'API Not Enabled';
+             userMessage = 'YouTube Data API v3 is not enabled or Access Not Configured.';
+           } else {
+             status = 'Forbidden';
+             userMessage = `Forbidden: ${fetchError.message}`;
+           }
+        } else if (fetchError.apiStatus === 404 || fetchError.reason === 'videoNotFound') {
+           status = 'Video Not Found';
+           userMessage = 'Verification Error: Video Not Found.';
+        } else if (fetchError.apiStatus === 400 && (fetchError.reason === 'keyInvalid' || fetchError.message?.includes('API key not valid'))) {
+           status = 'API Key Invalid';
+           userMessage = 'The configured YouTube API Key is invalid.';
+        } else if (fetchError.apiStatus === 'NETWORK_ERROR') {
+           status = 'Network Error';
+           userMessage = 'A network error occurred while contacting YouTube API.';
+        }
+
+        try {
+          await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        } catch (dbErr) {
+          global.lastDatabaseError = { message: dbErr.message, code: dbErr.code, detail: dbErr.detail };
+          global.lastDatabaseQuery = `UPDATE task_activity SET comment_status = '${status}' WHERE user_id = ${userId} AND task_id = ${taskId}`;
+          throw dbErr;
+        }
+        
+        logDiagnostic({ 
+          ...diagBase, 
+          verificationSource, 
+          apiErrorStatus: fetchError.apiStatus,
+          apiErrorCode: fetchError.errorCode,
+          apiErrorMessage: fetchError.message,
+          status: status, 
+          reason: fetchError.message 
+        });
+        return res.json({
+          message: userMessage,
+          comment_status: status
+        });
+      }
+
+      if (!comments || comments.length === 0) {
+        const status = 'No Comments Available';
+        try {
+          await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        } catch (dbErr) {
+          global.lastDatabaseError = { message: dbErr.message, code: dbErr.code, detail: dbErr.detail };
+          global.lastDatabaseQuery = `UPDATE task_activity SET comment_status = '${status}' WHERE user_id = ${userId} AND task_id = ${taskId}`;
+          throw dbErr;
+        }
+
+        logDiagnostic({ ...diagBase, verificationSource, retrievedCommentsCount: 0, status: status, reason: 'YouTube API returned an empty list of comments for this video' });
+        return res.json({ 
+          message: 'No comments found on this video.', 
+          comment_status: status 
+        });
+      }
+
+      diagBase.numComments = comments.length;
+      console.log(`\nComments Retrieved: ${comments.length}`);
+      logDiagnostic({ ...diagBase, status: 'Comment Retrieval Successful', retrievedCommentsCount: comments.length, reason: 'Successfully fetched comments from YouTube API' });
+
+      let matchedAuthor = null;
+      let commentFound = false;
+      let authorsList = [];
+
+      for (const item of comments) {
+        const authorName = item.snippet?.topLevelComment?.snippet?.authorDisplayName || item.author;
+        if (authorName) {
+          authorsList.push(authorName);
+          const { isMatch, cleanA, cleanB } = matchYouTubeHandle(authorName, user.youtube_handle);
+          if (isMatch) {
+            matchedAuthor = authorName;
+            commentFound = true;
+            console.log(`\n[Author Matching Validation]\nStored YouTube Handle: ${user.youtube_handle}\nDetected Comment Author: ${authorName}\nNormalized Values: Stored(${cleanB}) vs Detected(${cleanA})\nMatch Result: TRUE`);
+            break;
+          } else {
+            console.log(`[Author Matching Validation]\nStored YouTube Handle: ${user.youtube_handle}\nDetected Comment Author: ${authorName}\nNormalized Values: Stored(${cleanB}) vs Detected(${cleanA})\nMatch Result: FALSE`);
+          }
+        }
+      }
+
+      diagBase.authorsRetrieved = authorsList.join(', ');
+
+      if (commentFound) {
+        const status = 'Comment Verified';
+        await db.query('BEGIN');
+        await db.query('UPDATE users SET points = points + 5 WHERE id = $1', [userId]);
+        await db.query(`
+          UPDATE task_activity 
+          SET comment_status = $1, 
+              comment_verified_at = CURRENT_TIMESTAMP, 
+              comment_points_awarded = 5 
+          WHERE user_id = $2 AND task_id = $3
+        `, [status, userId, taskId]);
+        await db.query('COMMIT');
+
+        logDiagnostic({ ...diagBase, verificationSource, matchResult: true, status: status, reason: `Successfully matched comment from ${matchedAuthor}` });
+
+        return res.json({ message: 'Comment successfully verified! +5 Points awarded.', comment_status: status });
+      } else {
+        const status = 'Comment Not Found';
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        
+        logDiagnostic({ ...diagBase, verificationSource, matchResult: false, status: status, reason: 'No matching comment found for your handle' });
+
+        return res.json({ 
+          message: 'YouTube handle mismatch: No matching comment found for your handle.', 
+          comment_status: status 
+        });
+      }
+    } else if (platform === 'Instagram') {
+      await db.query('BEGIN');
+      await db.query('UPDATE users SET points = points + 5 WHERE id = $1', [userId]);
       await db.query(
         "UPDATE task_activity SET comment_status = 'Comment Detected', comment_verified_at = CURRENT_TIMESTAMP, comment_points_awarded = 5 WHERE user_id = $1 AND task_id = $2",
         [userId, taskId]
       );
-
       await db.query('COMMIT');
 
-      return res.json({
-        message: 'Comment successfully verified! +5 Points awarded.',
-        comment_status: 'Comment Detected'
-      });
+      return res.json({ message: 'Comment successfully verified! +5 Points awarded.', comment_status: 'Comment Detected' });
     } else {
-      // LinkedIn or Facebook: platform verification not available
-      await db.query(
-        "UPDATE task_activity SET comment_status = 'Comment Not Verified' WHERE user_id = $1 AND task_id = $2",
-        [userId, taskId]
-      );
-      return res.json({
-        message: `Automatic comment verification is not available for ${platform}.`,
-        comment_status: 'Comment Not Verified'
-      });
+      await db.query("UPDATE task_activity SET comment_status = 'Comment Not Verified' WHERE user_id = $1 AND task_id = $2", [userId, taskId]);
+      return res.json({ message: `Automatic comment verification is not available for ${platform}.`, comment_status: 'Comment Not Verified' });
     }
 
   } catch (error) {
     if (db) await db.query('ROLLBACK');
-    console.error('Error verifying task comment:', error);
-    res.status(500).json({ error: 'Failed to verify comment. Database error.' });
+    console.error('\n--- DATABASE ERROR IN VERIFICATION ---');
+    console.error('Full Error Message:', error.message);
+    console.error('Error Code:', error.code);
+    console.error('Stack Trace:', error.stack);
+    
+    global.lastDatabaseError = global.lastDatabaseError || { message: error.message, code: error.code };
+    
+    res.status(500).json({ 
+      error: 'Failed to verify comment. Database error.',
+      pgError: error.message,
+      pgCode: error.code,
+      failingQuery: global.lastDatabaseQuery || 'See server logs for query detail'
+    });
   }
+});
+
+router.get('/system/verification-debug', (req, res) => {
+  res.json({
+    verificationStage: global.verificationDiagnostics.length > 0 ? global.verificationDiagnostics[0].status : 'None',
+    databaseStatus: global.lastDatabaseError ? 'Error' : 'OK',
+    lastVerificationError: global.lastDatabaseError,
+    lastFailedQuery: global.lastDatabaseQuery
+  });
 });
 
 module.exports = router;
