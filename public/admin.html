@@ -4,8 +4,12 @@
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>EngageHub - Admin Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script id="tailwind-config">
         tailwind.config = {
@@ -92,9 +96,7 @@
     <nav aria-label="Sidebar" class="bg-inverse-surface dark:bg-surface-container-highest text-primary dark:text-inverse-primary font-headline text-body-sm font-normal h-screen w-64 flex flex-col border-r border-outline-variant fixed inset-y-0 left-0 z-50 overflow-y-auto hidden md:flex">
         <!-- Brand/Header -->
         <div class="flex items-center gap-3 p-6 border-b border-on-secondary-container/20">
-            <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">hub</span>
-            </div>
+            <img src="/assets/logo/engagehub-logo.png" alt="EngageHub Logo" class="h-10 w-auto object-contain shrink-0">
             <div>
                 <h1 class="text-xl font-bold text-inverse-on-surface dark:text-on-surface tracking-tight">EngageHub</h1>
                 <p class="text-xs text-secondary-fixed-dim">Admin Portal</p>
@@ -175,6 +177,7 @@
                 <button id="mobile-menu-toggle" class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-70 p-1">
                     <span class="material-symbols-outlined">menu</span>
                 </button>
+                <img src="/assets/logo/engagehub-logo.png" alt="EngageHub Logo" class="h-6 w-auto ml-1 object-contain shrink-0">
                 <span class="text-lg font-black text-on-surface dark:text-inverse-on-surface tracking-tight">EngageHub</span>
             </div>
             <div class="flex items-center gap-4">
@@ -188,7 +191,10 @@
         <div id="mobile-sidebar" class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden md:hidden">
             <div class="bg-inverse-surface w-64 h-full flex flex-col border-r border-outline-variant p-4">
                 <div class="flex justify-between items-center pb-6 border-b border-on-secondary-container/20 mb-4">
-                    <span class="text-xl font-bold text-inverse-on-surface">EngageHub</span>
+                    <div class="flex items-center gap-2">
+                        <img src="/assets/logo/engagehub-logo.png" alt="EngageHub Logo" class="h-6 w-auto object-contain shrink-0">
+                        <span class="text-xl font-bold text-inverse-on-surface">EngageHub</span>
+                    </div>
                     <button id="mobile-menu-close" class="text-secondary-fixed-dim hover:text-inverse-on-surface">
                         <span class="material-symbols-outlined">close</span>
                     </button>
@@ -951,7 +957,7 @@
                                 <p class="text-xs text-on-surface-variant mt-1">Configure YouTube Data API for comment verification.</p>
                             </div>
                             <div class="p-6 space-y-6">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                     <div class="bg-surface-container-lowest p-4 border border-outline-variant rounded">
                                         <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">API Status</p>
                                         <div class="flex items-center gap-2">
@@ -960,13 +966,35 @@
                                         </div>
                                     </div>
                                     <div class="bg-surface-container-lowest p-4 border border-outline-variant rounded">
-                                        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Last API Response Status</p>
-                                        <p id="setting-youtube-last-response" class="text-base font-mono text-on-surface">--</p>
+                                        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Daily Quota Usage</p>
+                                        <div class="flex items-center justify-between">
+                                            <p id="setting-youtube-quota-usage" class="text-base font-mono text-on-surface">-- / 10000</p>
+                                            <p id="setting-youtube-quota-percentage" class="text-sm font-bold text-primary">--%</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="bg-surface-container-lowest p-4 border border-outline-variant rounded">
-                                    <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Last Verification Attempt</p>
-                                    <p id="setting-youtube-last-attempt" class="text-base text-on-surface">--</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-surface-container-lowest p-4 border border-outline-variant rounded">
+                                        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Quota Remaining</p>
+                                        <p id="setting-youtube-quota-remaining" class="text-base font-mono text-on-surface">-- Remaining</p>
+                                    </div>
+                                    <div class="bg-surface-container-lowest p-4 border border-outline-variant rounded">
+                                        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Last API Request</p>
+                                        <div class="flex flex-col gap-1 mt-1">
+                                            <div class="flex justify-between items-center text-sm">
+                                                <span class="text-on-surface-variant">Status:</span>
+                                                <span id="setting-youtube-last-req-status" class="font-semibold text-on-surface">--</span>
+                                            </div>
+                                            <div class="flex justify-between items-center text-sm">
+                                                <span class="text-on-surface-variant">Response Code:</span>
+                                                <span id="setting-youtube-last-req-code" class="font-mono text-on-surface">--</span>
+                                            </div>
+                                            <div class="flex justify-between items-center text-sm">
+                                                <span class="text-on-surface-variant">Timestamp:</span>
+                                                <span id="setting-youtube-last-req-time" class="text-on-surface">--</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

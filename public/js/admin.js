@@ -936,32 +936,59 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchSettings() {
         const elStatus = document.getElementById('setting-youtube-status');
         const elIcon = document.getElementById('setting-youtube-status-icon');
-        const elAttempt = document.getElementById('setting-youtube-last-attempt');
-        const elResponse = document.getElementById('setting-youtube-last-response');
+        const elQuotaUsage = document.getElementById('setting-youtube-quota-usage');
+        const elQuotaPercentage = document.getElementById('setting-youtube-quota-percentage');
+        const elQuotaRemaining = document.getElementById('setting-youtube-quota-remaining');
+        const elLastStatus = document.getElementById('setting-youtube-last-req-status');
+        const elLastCode = document.getElementById('setting-youtube-last-req-code');
+        const elLastTime = document.getElementById('setting-youtube-last-req-time');
 
         elStatus.textContent = 'Loading...';
         
         try {
-            const settings = await apiRequest('/api/admin/settings/youtube');
+            const settings = await apiRequest('/api/system/youtube-status');
             
-            elStatus.textContent = settings.status;
-            if (settings.status === 'Configured') {
+            if (settings.envKeyPresent && settings.startupDetectedKey) {
+                elStatus.textContent = 'Configured';
                 elIcon.textContent = 'check_circle';
                 elIcon.className = 'material-symbols-outlined text-xl text-tertiary';
                 elStatus.className = 'text-base font-bold text-tertiary';
             } else {
+                elStatus.textContent = 'Not Configured';
                 elIcon.textContent = 'error';
                 elIcon.className = 'material-symbols-outlined text-xl text-error';
                 elStatus.className = 'text-base font-bold text-error';
             }
 
-            elAttempt.textContent = settings.lastAttempt ? new Date(settings.lastAttempt).toLocaleString() : 'Never';
-            elResponse.textContent = settings.lastResponseStatus || '--';
-            
-            if (settings.lastResponseStatus && settings.lastResponseStatus !== 200) {
-                elResponse.classList.add('text-error');
+            // Quota Elements
+            if (settings.quota) {
+                elQuotaUsage.textContent = `${settings.quota.usedToday} / 10000`;
+                elQuotaPercentage.textContent = `${settings.quota.percentage}%`;
+                elQuotaRemaining.textContent = `${settings.quota.remaining} Remaining`;
             } else {
-                elResponse.classList.remove('text-error');
+                elQuotaUsage.textContent = '-- / 10000';
+                elQuotaPercentage.textContent = '--%';
+                elQuotaRemaining.textContent = '-- Remaining';
+            }
+
+            // Last Request Elements
+            if (settings.lastRequest) {
+                elLastStatus.textContent = settings.lastRequest.status;
+                elLastCode.textContent = settings.lastRequest.responseCode || '--';
+                elLastTime.textContent = new Date(settings.lastRequest.timestamp).toLocaleString();
+                
+                if (settings.lastRequest.status !== 'success') {
+                    elLastStatus.classList.add('text-error');
+                    elLastCode.classList.add('text-error');
+                } else {
+                    elLastStatus.classList.remove('text-error');
+                    elLastCode.classList.remove('text-error');
+                    elLastStatus.classList.add('text-tertiary');
+                }
+            } else {
+                elLastStatus.textContent = 'None';
+                elLastCode.textContent = '--';
+                elLastTime.textContent = '--';
             }
 
         } catch (error) {

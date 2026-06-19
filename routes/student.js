@@ -414,12 +414,23 @@ async function fetchYouTubeComments(videoId, apiKey) {
     response = await fetch(url);
   } catch (netErr) {
     console.error(`[YOUTUBE API ERROR] Network Error:`, netErr.message);
+    try {
+      await db.query('INSERT INTO youtube_api_usage (request_type, quota_cost, status, response_code) VALUES ($1, $2, $3, $4)', ['commentThreads.list', 1, 'failed', null]);
+    } catch (e) {
+      console.error('Failed to log YouTube API usage:', e);
+    }
     const err = new Error(`Network Error: ${netErr.message}`);
     err.apiStatus = 'NETWORK_ERROR';
     err.reason = 'Network Error';
     throw err;
   }
   
+  try {
+    await db.query('INSERT INTO youtube_api_usage (request_type, quota_cost, status, response_code) VALUES ($1, $2, $3, $4)', ['commentThreads.list', 1, response.ok ? 'success' : 'failed', response.status]);
+  } catch (e) {
+    console.error('Failed to log YouTube API usage:', e);
+  }
+
   if (global.youtubeApiStatus) {
     global.youtubeApiStatus.lastAttempt = new Date();
     global.youtubeApiStatus.lastResponseStatus = response.status;

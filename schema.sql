@@ -62,3 +62,13 @@ CREATE TABLE verification_audit_logs (
   status VARCHAR(255),
   reason TEXT
 );
+
+-- YouTube API Usage Tracking Table
+CREATE TABLE IF NOT EXISTS youtube_api_usage (
+  id SERIAL PRIMARY KEY,
+  request_type VARCHAR(255) NOT NULL,
+  quota_cost INTEGER NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  response_code INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

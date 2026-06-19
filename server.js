@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
+const { pool } = require('./db');
 
 // In-memory storage for verification diagnostics
 global.verificationDiagnostics = [];
@@ -40,12 +41,33 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
 });
 
-app.get('/api/system/youtube-status', (req, res) => {
-  res.json({
-    envKeyPresent: !!process.env.YOUTUBE_API_KEY,
-    verificationMode: process.env.YOUTUBE_API_KEY ? "REAL_API" : "MOCK",
-    startupDetectedKey: global.youtubeApiStatus.status === 'Configured'
-  });
+app.get('/api/system/youtube-status', async (req, res) => {
+  try {
+    const quotaResult = await pool.query("SELECT COALESCE(SUM(quota_cost), 0) AS used_today FROM youtube_api_usage WHERE DATE(created_at) = CURRENT_DATE");
+    const lastReqResult = await pool.query("SELECT status, response_code, created_at FROM youtube_api_usage ORDER BY created_at DESC LIMIT 1");
+    
+    const usedToday = parseInt(quotaResult.rows[0].used_today, 10);
+    const lastReq = lastReqResult.rows.length > 0 ? lastReqResult.rows[0] : null;
+
+    res.json({
+      envKeyPresent: !!process.env.YOUTUBE_API_KEY,
+      verificationMode: process.env.YOUTUBE_API_KEY ? "REAL_API" : "MOCK",
+      startupDetectedKey: global.youtubeApiStatus.status === 'Configured',
+      quota: {
+        usedToday: usedToday,
+        remaining: 10000 - usedToday,
+        percentage: ((usedToday / 10000) * 100).toFixed(2)
+      },
+      lastRequest: lastReq ? {
+        status: lastReq.status,
+        responseCode: lastReq.response_code,
+        timestamp: lastReq.created_at
+      } : null
+    });
+  } catch (error) {
+    console.error('Error fetching youtube status:', error);
+    res.status(500).json({ error: 'Failed to retrieve youtube status.' });
+  }
 });
 
 // Fallback to landing page for undefined routes
@@ -54,7 +76,6 @@ app.get('*', (req, res) => {
 });
 
 // Start Server after database check
-const { pool } = require('./db');
 const fs = require('fs');
 
 async function checkAndInitializeDatabase() {
