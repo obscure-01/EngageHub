@@ -17,6 +17,7 @@ CREATE TABLE users (
   youtube_handle VARCHAR(255) DEFAULT NULL,
   linkedin_profile VARCHAR(255) DEFAULT NULL,
   facebook_profile VARCHAR(255) DEFAULT NULL,
+  facebook_display_name VARCHAR(255) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -70,5 +71,16 @@ CREATE TABLE IF NOT EXISTS youtube_api_usage (
   quota_cost INTEGER NOT NULL,
   status VARCHAR(50) NOT NULL,
   response_code INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Facebook API Usage Tracking Table
+CREATE TABLE IF NOT EXISTS facebook_api_usage (
+  id SERIAL PRIMARY KEY,
+  request_type VARCHAR(255) NOT NULL,
+  quota_cost INTEGER NOT NULL DEFAULT 0,
+  status VARCHAR(50) NOT NULL,
+  response_code INTEGER,
+  error_message TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

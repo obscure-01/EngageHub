@@ -11,6 +11,11 @@ global.youtubeApiStatus = {
   lastAttempt: null,
   lastResponseStatus: null
 };
+global.facebookApiStatus = {
+  status: process.env.FACEBOOK_PAGE_ACCESS_TOKEN ? 'Configured' : 'Missing Token',
+  lastAttempt: null,
+  lastResponseStatus: null
+};
 const authRouter = require('./routes/auth');
 const adminRouter = require('./routes/admin');
 const studentRouter = require('./routes/student');
@@ -116,10 +121,25 @@ async function checkAndInitializeDatabase() {
 
     // Ensure the CHECK constraint is updated to support the new comment status values
     console.log('Ensuring database constraints are up-to-date...');
+    
+    // Auto-migrate new columns and tables for V4 update if they don't exist
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_display_name VARCHAR(255) DEFAULT NULL;`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS facebook_api_usage (
+        id SERIAL PRIMARY KEY,
+        request_type VARCHAR(255) NOT NULL,
+        quota_cost INTEGER NOT NULL DEFAULT 0,
+        status VARCHAR(50) NOT NULL,
+        response_code INTEGER,
+        error_message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
     await pool.query(`
       ALTER TABLE task_activity DROP CONSTRAINT IF EXISTS task_activity_comment_status_check;
       ALTER TABLE task_activity ADD CONSTRAINT task_activity_comment_status_check CHECK (
-        comment_status IN ('Not Checked', 'Comment Verified', 'Comment Not Found', 'YouTube Account Not Available', 'Verification Error', 'Not Attempted', 'Comment Detected', 'Comment Not Verified', 'Platform Not Available', 'Invalid URL', 'Video ID Extraction Failed', 'Video Not Found', 'Handle Mismatch', 'Verification Successful', 'Student Handle Missing', 'Comments Not Accessible', 'No Comments Retrieved', 'Configuration Error', 'Comments Disabled', 'API Quota Exceeded', 'API Not Enabled', 'API Key Invalid', 'Network Error', 'No Comments Available')
+        comment_status IN ('Not Checked', 'Comment Verified', 'Comment Not Found', 'YouTube Account Not Available', 'Verification Error', 'Not Attempted', 'Comment Detected', 'Comment Not Verified', 'Platform Not Available', 'Invalid URL', 'Video ID Extraction Failed', 'Video Not Found', 'Handle Mismatch', 'Verification Successful', 'Student Handle Missing', 'Comments Not Accessible', 'No Comments Retrieved', 'Configuration Error', 'Comments Disabled', 'API Quota Exceeded', 'API Not Enabled', 'API Key Invalid', 'Network Error', 'No Comments Available', 'Facebook Account Not Available', 'Post ID Extraction Failed', 'Post Not Found', 'Facebook API Error', 'Rate Limited')
       );
     `);
     console.log('Database constraints verified.');
@@ -143,6 +163,14 @@ checkAndInitializeDatabase().then(() => {
     } else {
       console.log(` YouTube API Status: Missing API Key`);
       console.warn(` [WARNING] YouTube Comment Verification will fail with Configuration Error.`);
+    }
+    
+    console.log(`FACEBOOK_PAGE_ACCESS_TOKEN Present: ${!!process.env.FACEBOOK_PAGE_ACCESS_TOKEN ? 'TRUE' : 'FALSE'}`);
+    if (process.env.FACEBOOK_PAGE_ACCESS_TOKEN) {
+      console.log(` Facebook API Status: Configured`);
+    } else {
+      console.log(` Facebook API Status: Missing Token`);
+      console.warn(` [WARNING] Facebook Comment Verification will fail with Configuration Error.`);
     }
     
     console.log(`=========================================`);

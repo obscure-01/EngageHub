@@ -6,6 +6,67 @@ const { authenticateToken, requireRole } = require('../middleware');
 // Protect all routes with JWT and check for 'Student' role
 router.use(authenticateToken, requireRole('Student'));
 
+// Rate Limiter for Verification
+const rateLimitMap = new Map(); // key: `${userId}_${taskId}`, value: { count, resetTime }
+
+function checkRateLimit(userId, taskId) {
+  const key = `${userId}_${taskId}`;
+  const now = Date.now();
+  if (rateLimitMap.has(key)) {
+    const data = rateLimitMap.get(key);
+    if (now > data.resetTime) {
+      rateLimitMap.set(key, { count: 1, resetTime: now + 5 * 60 * 1000 });
+      return true;
+    }
+    if (data.count >= 3) {
+      return false;
+    }
+    data.count++;
+    return true;
+  }
+  rateLimitMap.set(key, { count: 1, resetTime: now + 5 * 60 * 1000 });
+  return true;
+}
+
+// Facebook Post ID Extraction
+function extractFacebookPostId(url) {
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname;
+    const searchParams = parsed.searchParams;
+
+    if (pathname.includes('permalink.php') || pathname.includes('story.php')) {
+      const storyFbid = searchParams.get('story_fbid');
+      const pageId = searchParams.get('id');
+      if (storyFbid && pageId) return `${pageId}_${storyFbid}`;
+    }
+    if (pathname.includes('photo')) {
+      return searchParams.get('fbid');
+    }
+    if (pathname.includes('/watch')) {
+      return searchParams.get('v');
+    }
+    const postsMatch = pathname.match(/\/([^/]+)\/posts\/([^/?]+)/);
+    if (postsMatch) {
+      if (postsMatch[2].startsWith('pfbid')) return postsMatch[2];
+      if (/^\d+$/.test(postsMatch[1])) return `${postsMatch[1]}_${postsMatch[2]}`;
+      return postsMatch[2];
+    }
+    const videosMatch = pathname.match(/\/([^/]+)\/videos\/(\d+)/);
+    if (videosMatch) return videosMatch[2];
+    
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function matchFacebookName(storedName, commenterName) {
+  if (!storedName || !commenterName) return false;
+  const normalize = (s) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+  return normalize(storedName) === normalize(commenterName);
+}
+
 // 1. Welcome Section & Overview Dashboard
 router.get('/dashboard', async (req, res) => {
   const userId = req.user.id;
@@ -244,7 +305,7 @@ router.get('/profile', async (req, res) => {
   try {
     // 1. Get basic user info
     const userResult = await db.query(
-      'SELECT name, email, points, instagram_username, youtube_handle, linkedin_profile, facebook_profile FROM users WHERE id = $1', 
+      'SELECT name, email, points, instagram_username, youtube_handle, linkedin_profile, facebook_profile, facebook_display_name FROM users WHERE id = $1', 
       [userId]
     );
     if (userResult.rows.length === 0) {
@@ -276,6 +337,7 @@ router.get('/profile', async (req, res) => {
       youtube_handle: user.youtube_handle,
       linkedin_profile: user.linkedin_profile,
       facebook_profile: user.facebook_profile,
+      facebook_display_name: user.facebook_display_name,
       completedTasks: completedCount,
       pendingTasks: pendingCount
     });
@@ -289,20 +351,21 @@ router.get('/profile', async (req, res) => {
 // Update Profile Social Settings
 router.put('/profile/social', async (req, res) => {
   const userId = req.user.id;
-  const { instagram_username, youtube_handle, linkedin_profile, facebook_profile } = req.body;
+  const { instagram_username, youtube_handle, linkedin_profile, facebook_profile, facebook_display_name } = req.body;
 
   try {
     const updateQuery = `
       UPDATE users
-      SET instagram_username = $1, youtube_handle = $2, linkedin_profile = $3, facebook_profile = $4
-      WHERE id = $5
-      RETURNING name, email, points, instagram_username, youtube_handle, linkedin_profile, facebook_profile
+      SET instagram_username = $1, youtube_handle = $2, linkedin_profile = $3, facebook_profile = $4, facebook_display_name = $5
+      WHERE id = $6
+      RETURNING name, email, points, instagram_username, youtube_handle, linkedin_profile, facebook_profile, facebook_display_name
     `;
     const result = await db.query(updateQuery, [
       instagram_username ? instagram_username.trim() : null,
       youtube_handle ? youtube_handle.trim() : null,
       linkedin_profile ? linkedin_profile.trim() : null,
       facebook_profile ? facebook_profile.trim() : null,
+      facebook_display_name ? facebook_display_name.trim() : null,
       userId
     ]);
 
@@ -537,7 +600,7 @@ router.post('/tasks/:id/verify-comment', async (req, res) => {
 
     // 4. Fetch user details to get the relevant handle
     const userResult = await db.query(
-      'SELECT name, instagram_username, youtube_handle, linkedin_profile, facebook_profile FROM users WHERE id = $1',
+      'SELECT name, instagram_username, youtube_handle, linkedin_profile, facebook_profile, facebook_display_name FROM users WHERE id = $1',
       [userId]
     );
     if (userResult.rows.length === 0) {
@@ -550,7 +613,7 @@ router.post('/tasks/:id/verify-comment', async (req, res) => {
     if (platform === 'Instagram') handle = user.instagram_username;
     else if (platform === 'YouTube') handle = user.youtube_handle;
     else if (platform === 'LinkedIn') handle = user.linkedin_profile;
-    else if (platform === 'Facebook') handle = user.facebook_profile;
+    else if (platform === 'Facebook') handle = user.facebook_display_name;
 
     const diagBase = {
       taskId: taskId,
@@ -577,11 +640,21 @@ router.post('/tasks/:id/verify-comment', async (req, res) => {
       });
     }
 
-    if (platform !== 'YouTube' && (!handle || handle.trim() === '')) {
+    if (platform !== 'YouTube' && platform !== 'Facebook' && (!handle || handle.trim() === '')) {
       await db.query("UPDATE task_activity SET comment_status = 'Platform Not Available' WHERE user_id = $1 AND task_id = $2", [userId, taskId]);
       return res.json({
         message: `Your ${platform} handle/profile is not configured. Please add it in Profile settings.`,
         comment_status: 'Platform Not Available'
+      });
+    }
+
+    if (platform === 'Facebook' && (!handle || handle.trim() === '')) {
+      const status = 'Facebook Account Not Available';
+      await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+      logDiagnostic({ ...diagBase, status: status, reason: 'No Facebook Display Name set in profile' });
+      return res.status(400).json({
+        message: 'Please add your exact Facebook Display Name in Profile Settings before using comment verification.',
+        comment_status: status
       });
     }
 
@@ -750,6 +823,113 @@ router.post('/tasks/:id/verify-comment', async (req, res) => {
           comment_status: status 
         });
       }
+    } else if (platform === 'Facebook') {
+      if (!checkRateLimit(userId, taskId)) {
+        const status = 'Rate Limited';
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        logDiagnostic({ ...diagBase, status: status, reason: 'Exceeded 3 attempts per 5 minutes' });
+        return res.status(429).json({ message: 'Too many verification attempts. Please wait 5 minutes.', comment_status: status });
+      }
+
+      const postId = extractFacebookPostId(socialLink);
+      if (!postId) {
+        const status = 'Post ID Extraction Failed';
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        logDiagnostic({ ...diagBase, status: status, reason: 'Could not extract Post ID from URL' });
+        return res.status(400).json({ message: 'Verification Error: Invalid Facebook URL or unsupported post format.', comment_status: status });
+      }
+
+      const fbToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+      if (!fbToken) {
+        const status = 'Configuration Error';
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        logDiagnostic({ ...diagBase, status: status, reason: 'Missing FACEBOOK_PAGE_ACCESS_TOKEN' });
+        return res.status(503).json({ message: 'Facebook Comment Verification is not configured on the server.', comment_status: status });
+      }
+
+      let fbResponse;
+      try {
+        const fbUrl = `https://graph.facebook.com/v21.0/${postId}/comments?fields=from,message,created_time&access_token=${fbToken}`;
+        fbResponse = await fetch(fbUrl);
+      } catch (netErr) {
+        await db.query("INSERT INTO facebook_api_usage (request_type, quota_cost, status, response_code, error_message) VALUES ($1, $2, $3, $4, $5)", ['GET comments', 1, 'failed', null, netErr.message]).catch(() => {});
+        const status = 'Facebook API Error';
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        return res.status(500).json({ message: 'Network error connecting to Facebook API.', comment_status: status });
+      }
+
+      const fbData = await fbResponse.json();
+      await db.query("INSERT INTO facebook_api_usage (request_type, quota_cost, status, response_code, error_message) VALUES ($1, $2, $3, $4, $5)", ['GET comments', 1, fbResponse.ok ? 'success' : 'failed', fbResponse.status, fbResponse.ok ? null : JSON.stringify(fbData.error)]).catch(() => {});
+      
+      if (global.facebookApiStatus) {
+        global.facebookApiStatus.lastAttempt = new Date();
+        global.facebookApiStatus.lastResponseStatus = fbResponse.status;
+      }
+
+      if (!fbResponse.ok) {
+        let status = 'Facebook API Error';
+        let httpCode = 500;
+        let userMessage = 'Error connecting to Facebook API.';
+        if (fbResponse.status === 404) {
+          status = 'Post Not Found';
+          httpCode = 404;
+          userMessage = 'Facebook Post not found or is inaccessible.';
+        } else if (fbResponse.status === 403) {
+          status = 'Comments Not Accessible';
+          httpCode = 403;
+          userMessage = 'Permission denied retrieving comments for this post.';
+        } else if (fbResponse.status === 400) {
+          status = 'Configuration Error';
+          httpCode = 503;
+          userMessage = 'Facebook API Token or configuration is invalid.';
+        }
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        logDiagnostic({ ...diagBase, status: status, reason: fbData.error?.message || 'API Error' });
+        return res.status(httpCode).json({ message: userMessage, comment_status: status });
+      }
+
+      const comments = fbData.data || [];
+      diagBase.numComments = comments.length;
+      logDiagnostic({ ...diagBase, status: 'Comment Retrieval Successful', retrievedCommentsCount: comments.length, reason: 'Successfully fetched comments from Facebook API' });
+
+      let matchFound = false;
+      let matchedAuthor = null;
+      let authorsList = [];
+
+      for (const item of comments) {
+        const commenterName = item.from?.name;
+        if (commenterName) {
+          authorsList.push(commenterName);
+          if (matchFacebookName(handle, commenterName)) {
+            matchFound = true;
+            matchedAuthor = commenterName;
+            break;
+          }
+        }
+      }
+      diagBase.authorsRetrieved = authorsList.join(', ');
+
+      if (matchFound) {
+        const status = 'Comment Verified';
+        await db.query('BEGIN');
+        await db.query('UPDATE users SET points = points + 5 WHERE id = $1', [userId]);
+        await db.query(`
+          UPDATE task_activity 
+          SET comment_status = $1, 
+              comment_verified_at = CURRENT_TIMESTAMP, 
+              comment_points_awarded = 5 
+          WHERE user_id = $2 AND task_id = $3
+        `, [status, userId, taskId]);
+        await db.query('COMMIT');
+        logDiagnostic({ ...diagBase, matchResult: true, status: status, reason: `Successfully matched comment from ${matchedAuthor}` });
+        return res.json({ message: 'Comment successfully verified! +5 Points awarded.', comment_status: status });
+      } else {
+        const status = 'Comment Not Found';
+        await db.query("UPDATE task_activity SET comment_status = $1 WHERE user_id = $2 AND task_id = $3", [status, userId, taskId]);
+        logDiagnostic({ ...diagBase, matchResult: false, status: status, reason: 'No matching comment found for your display name' });
+        return res.status(404).json({ message: 'No matching comment found for your exact Facebook Display Name.', comment_status: status });
+      }
+
     } else if (platform === 'Instagram') {
       await db.query('BEGIN');
       await db.query('UPDATE users SET points = points + 5 WHERE id = $1', [userId]);

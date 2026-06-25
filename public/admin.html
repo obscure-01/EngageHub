@@ -998,6 +998,56 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="border border-outline-variant rounded-DEFAULT overflow-hidden mt-6">
+                            <div class="bg-surface-container-low px-6 py-4 border-b border-outline-variant">
+                                <h4 class="text-lg font-semibold flex items-center gap-2 text-on-surface">
+                                    <span class="material-symbols-outlined text-primary">facebook</span>
+                                    Facebook Integration
+                                </h4>
+                                <p class="text-xs text-on-surface-variant mt-1">Configure Facebook Graph API for comment verification.</p>
+                            </div>
+                            <div class="p-6 space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <div class="bg-surface-container-lowest p-4 border border-outline-variant rounded">
+                                        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">API Status</p>
+                                        <div class="flex items-center gap-2">
+                                            <span id="setting-facebook-status-icon" class="material-symbols-outlined text-xl">help</span>
+                                            <span id="setting-facebook-status" class="text-base font-bold text-on-surface">Loading...</span>
+                                        </div>
+                                    </div>
+                                    <div class="bg-surface-container-lowest p-4 border border-outline-variant rounded">
+                                        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Daily Requests</p>
+                                        <div class="flex items-center justify-between">
+                                            <p id="setting-facebook-requests-today" class="text-base font-mono text-on-surface">--</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-surface-container-lowest p-4 border border-outline-variant rounded">
+                                        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Verification Mode</p>
+                                        <p id="setting-facebook-mode" class="text-base font-mono text-on-surface">--</p>
+                                    </div>
+                                    <div class="bg-surface-container-lowest p-4 border border-outline-variant rounded">
+                                        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Last API Request</p>
+                                        <div class="flex flex-col gap-1 mt-1">
+                                            <div class="flex justify-between items-center text-sm">
+                                                <span class="text-on-surface-variant">Status:</span>
+                                                <span id="setting-facebook-last-req-status" class="font-semibold text-on-surface">--</span>
+                                            </div>
+                                            <div class="flex justify-between items-center text-sm">
+                                                <span class="text-on-surface-variant">Response Code:</span>
+                                                <span id="setting-facebook-last-req-code" class="font-mono text-on-surface">--</span>
+                                            </div>
+                                            <div class="flex justify-between items-center text-sm">
+                                                <span class="text-on-surface-variant">Timestamp:</span>
+                                                <span id="setting-facebook-last-req-time" class="text-on-surface">--</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

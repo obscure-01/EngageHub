@@ -454,4 +454,33 @@ router.get('/settings/youtube', (req, res) => {
   }
 });
 
+// 12. Admin Settings - Facebook API
+router.get('/facebook-status', async (req, res) => {
+  try {
+    const usageResult = await db.query("SELECT COUNT(*) AS request_count FROM facebook_api_usage WHERE DATE(created_at) = CURRENT_DATE");
+    const lastReqResult = await db.query("SELECT status, response_code, created_at, error_message FROM facebook_api_usage ORDER BY created_at DESC LIMIT 1");
+    
+    const requestCount = parseInt(usageResult.rows[0]?.request_count || 0, 10);
+    const lastReq = lastReqResult.rows.length > 0 ? lastReqResult.rows[0] : null;
+
+    res.json({
+      envKeyPresent: !!process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
+      verificationMode: process.env.FACEBOOK_PAGE_ACCESS_TOKEN ? "REAL_API" : "MOCK",
+      startupDetectedKey: global.facebookApiStatus?.status === 'Configured',
+      usage: {
+        requestsToday: requestCount
+      },
+      lastRequest: lastReq ? {
+        status: lastReq.status,
+        responseCode: lastReq.response_code,
+        errorMessage: lastReq.error_message,
+        timestamp: lastReq.created_at
+      } : null
+    });
+  } catch (error) {
+    console.error('Error fetching facebook status:', error);
+    res.status(500).json({ error: 'Failed to retrieve facebook status.' });
+  }
+});
+
 module.exports = router;

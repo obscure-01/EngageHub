@@ -943,7 +943,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const elLastCode = document.getElementById('setting-youtube-last-req-code');
         const elLastTime = document.getElementById('setting-youtube-last-req-time');
 
+        const fbElStatus = document.getElementById('setting-facebook-status');
+        const fbElIcon = document.getElementById('setting-facebook-status-icon');
+        const fbElRequests = document.getElementById('setting-facebook-requests-today');
+        const fbElMode = document.getElementById('setting-facebook-mode');
+        const fbElLastStatus = document.getElementById('setting-facebook-last-req-status');
+        const fbElLastCode = document.getElementById('setting-facebook-last-req-code');
+        const fbElLastTime = document.getElementById('setting-facebook-last-req-time');
+
         elStatus.textContent = 'Loading...';
+        if (fbElStatus) fbElStatus.textContent = 'Loading...';
         
         try {
             const settings = await apiRequest('/api/system/youtube-status');
@@ -995,6 +1004,55 @@ document.addEventListener('DOMContentLoaded', () => {
             elStatus.textContent = 'Error loading settings';
             elIcon.textContent = 'error';
             elIcon.className = 'material-symbols-outlined text-xl text-error';
+        }
+
+        try {
+            if (fbElStatus) {
+                const fbSettings = await apiRequest('/api/admin/facebook-status');
+                
+                if (fbSettings.envKeyPresent && fbSettings.startupDetectedKey) {
+                    fbElStatus.textContent = 'Configured';
+                    fbElIcon.textContent = 'check_circle';
+                    fbElIcon.className = 'material-symbols-outlined text-xl text-tertiary';
+                    fbElStatus.className = 'text-base font-bold text-tertiary';
+                } else {
+                    fbElStatus.textContent = 'Not Configured';
+                    fbElIcon.textContent = 'error';
+                    fbElIcon.className = 'material-symbols-outlined text-xl text-error';
+                    fbElStatus.className = 'text-base font-bold text-error';
+                }
+
+                if (fbSettings.usage) {
+                    fbElRequests.textContent = fbSettings.usage.requestsToday;
+                }
+
+                fbElMode.textContent = fbSettings.verificationMode || 'MOCK';
+
+                if (fbSettings.lastRequest) {
+                    fbElLastStatus.textContent = fbSettings.lastRequest.status;
+                    fbElLastCode.textContent = fbSettings.lastRequest.responseCode || '--';
+                    fbElLastTime.textContent = new Date(fbSettings.lastRequest.timestamp).toLocaleString();
+                    
+                    if (fbSettings.lastRequest.status !== 'success') {
+                        fbElLastStatus.classList.add('text-error');
+                        fbElLastCode.classList.add('text-error');
+                    } else {
+                        fbElLastStatus.classList.remove('text-error');
+                        fbElLastCode.classList.remove('text-error');
+                        fbElLastStatus.classList.add('text-tertiary');
+                    }
+                } else {
+                    fbElLastStatus.textContent = 'None';
+                    fbElLastCode.textContent = '--';
+                    fbElLastTime.textContent = '--';
+                }
+            }
+        } catch (error) {
+            if (fbElStatus) {
+                fbElStatus.textContent = 'Error loading settings';
+                fbElIcon.textContent = 'error';
+                fbElIcon.className = 'material-symbols-outlined text-xl text-error';
+            }
         }
     }
 

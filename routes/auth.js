@@ -55,7 +55,7 @@ router.post('/login', async (req, res) => {
 
 // Student Self-Registration
 router.post('/register', async (req, res) => {
-  const { name, email, password, instagram_username, youtube_handle, linkedin_profile, facebook_profile } = req.body;
+  const { name, email, password, instagram_username, youtube_handle, linkedin_profile, facebook_profile, facebook_display_name } = req.body;
 
   // 1. Validation
   if (!name || !email || !password) {
@@ -93,9 +93,9 @@ router.post('/register', async (req, res) => {
 
     // 4. Create new user record
     const insertQuery = `
-      INSERT INTO users (name, email, password_hash, role, points, instagram_username, youtube_handle, linkedin_profile, facebook_profile)
-      VALUES ($1, $2, $3, 'Student', 0, $4, $5, $6, $7)
-      RETURNING id, name, email, role, points, instagram_username, youtube_handle, linkedin_profile, facebook_profile
+      INSERT INTO users (name, email, password_hash, role, points, instagram_username, youtube_handle, linkedin_profile, facebook_profile, facebook_display_name)
+      VALUES ($1, $2, $3, 'Student', 0, $4, $5, $6, $7, $8)
+      RETURNING id, name, email, role, points, instagram_username, youtube_handle, linkedin_profile, facebook_profile, facebook_display_name
     `;
     const result = await db.query(insertQuery, [
       trimmedName, 
@@ -104,7 +104,8 @@ router.post('/register', async (req, res) => {
       instagram_username ? instagram_username.trim() : null,
       youtube_handle ? youtube_handle.trim() : null,
       linkedin_profile ? linkedin_profile.trim() : null,
-      facebook_profile ? facebook_profile.trim() : null
+      facebook_profile ? facebook_profile.trim() : null,
+      facebook_display_name ? facebook_display_name.trim() : null
     ]);
 
     res.status(201).json({

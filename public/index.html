@@ -270,8 +270,8 @@
                         <input class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-xs focus:border-primary focus:ring-0 focus:outline-none transition-colors h-9 rounded-t-DEFAULT" id="register-linkedin" type="url" placeholder="https://www.linkedin.com/in/...">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-semibold text-on-surface mb-1" for="register-facebook">Facebook Profile URL/User</label>
-                        <input class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-xs focus:border-primary focus:ring-0 focus:outline-none transition-colors h-9 rounded-t-DEFAULT" id="register-facebook" type="text" placeholder="e.g. alex.mercer.123">
+                        <label class="block text-[10px] font-semibold text-on-surface mb-1" for="register-facebook">Facebook Display Name</label>
+                        <input class="w-full border-b border-surface-container-high bg-surface-container-low px-3 py-2 text-xs focus:border-primary focus:ring-0 focus:outline-none transition-colors h-9 rounded-t-DEFAULT" id="register-facebook" type="text" placeholder="e.g. Alex Mercer">
                     </div>
                 </div>
                 <div class="pt-4">
@@ -441,7 +441,7 @@
                 const instagram_username = document.getElementById('register-instagram').value.trim() || null;
                 const youtube_handle = document.getElementById('register-youtube').value.trim() || null;
                 const linkedin_profile = document.getElementById('register-linkedin').value.trim() || null;
-                const facebook_profile = document.getElementById('register-facebook').value.trim() || null;
+                const facebook_display_name = document.getElementById('register-facebook').value.trim() || null;
 
                 try {
                     const response = await fetch('/api/auth/register', {
@@ -456,7 +456,7 @@
                             instagram_username,
                             youtube_handle,
                             linkedin_profile,
-                            facebook_profile
+                            facebook_display_name
                         })
                     });
 

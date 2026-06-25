@@ -322,8 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container text-on-tertiary-container border border-tertiary-fixed">Comment Verified (+5 pts)</span>`;
                 } else if (commentStatus === 'Comment Not Verified' || commentStatus === 'Comment Not Found') {
                     commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">Comment Not Found</span>`;
-                } else if (commentStatus === 'Platform Not Available' || commentStatus === 'YouTube Account Not Available') {
-                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary-container text-on-secondary-container border border-outline-variant">YouTube Account Not Available</span>`;
+                } else if (commentStatus === 'Platform Not Available' || commentStatus === 'YouTube Account Not Available' || commentStatus === 'Facebook Account Not Available') {
+                    commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary-container text-on-secondary-container border border-outline-variant">${commentStatus === 'Platform Not Available' ? 'Platform Not Available' : (task.platform + ' Account Not Available')}</span>`;
                 } else if (commentStatus === 'Invalid URL') {
                     commentStatusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container border border-[#fbdfe1]">Invalid URL</span>`;
                 } else if (commentStatus === 'Video ID Extraction Failed') {
@@ -529,17 +529,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('profile-instagram').value = data.instagram_username || '';
             document.getElementById('profile-youtube').value = data.youtube_handle || '';
             document.getElementById('profile-linkedin').value = data.linkedin_profile || '';
-            document.getElementById('profile-facebook').value = data.facebook_profile || '';
+            document.getElementById('profile-facebook').value = data.facebook_display_name || data.facebook_profile || '';
 
             // Populate display cards
             document.getElementById('display-instagram').textContent = data.instagram_username || 'Not Available';
             document.getElementById('display-youtube').textContent = data.youtube_handle || 'Not Available';
             document.getElementById('display-linkedin').textContent = data.linkedin_profile || 'Not Available';
-            document.getElementById('display-facebook').textContent = data.facebook_profile || 'Not Available';
+            document.getElementById('display-facebook').textContent = data.facebook_display_name || data.facebook_profile || 'Not Available';
 
             // Tooltips
             document.getElementById('display-linkedin').title = data.linkedin_profile || 'Not Available';
-            document.getElementById('display-facebook').title = data.facebook_profile || 'Not Available';
+            document.getElementById('display-facebook').title = data.facebook_display_name || data.facebook_profile || 'Not Available';
 
         } catch (error) {
             showAlert('Failed to load profile page data.', true);
@@ -554,12 +554,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const instagram_username = document.getElementById('profile-instagram').value.trim() || null;
             const youtube_handle = document.getElementById('profile-youtube').value.trim() || null;
             const linkedin_profile = document.getElementById('profile-linkedin').value.trim() || null;
-            const facebook_profile = document.getElementById('profile-facebook').value.trim() || null;
+            const facebook_display_name = document.getElementById('profile-facebook').value.trim() || null;
 
             try {
                 const response = await apiRequest('/api/student/profile/social', {
                     method: 'PUT',
-                    body: JSON.stringify({ instagram_username, youtube_handle, linkedin_profile, facebook_profile })
+                    body: JSON.stringify({ instagram_username, youtube_handle, linkedin_profile, facebook_display_name })
                 });
                 showAlert(response.message, false);
                 fetchFullProfile();
